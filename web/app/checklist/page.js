@@ -36,7 +36,7 @@ export default function ChecklistPage() {
 
       setProfile(profileData)
 
-      const { data: checklistItems } = await supabase
+const { data: checklistItems } = await supabase
         .from('checklist_items')
         .select('*')
         .order('days_before_separation', { ascending: false })
@@ -67,23 +67,27 @@ export default function ChecklistPage() {
     loadData()
   }, [])
 
-  const toggleItem = async (itemId, isCustom) => {
+const toggleItem = async (itemId, isCustom) => {
     const newValue = !completed[itemId]
     setCompleted(prev => ({ ...prev, [itemId]: newValue }))
 
     if (isCustom) {
-      await supabase
+      const { error } = await supabase
         .from('user_custom_tasks')
         .update({ completed: newValue })
         .eq('id', itemId)
+      if (error) console.log('Custom task error:', error.message)
     } else {
-      await supabase
+      const { error } = await supabase
         .from('user_checklist_progress')
         .upsert({
           user_id: user.id,
           checklist_item_id: itemId,
           completed: newValue
+        }, {
+          onConflict: 'user_id,checklist_item_id'
         })
+      if (error) console.log('Progress save error:', error.message)
     }
   }
 

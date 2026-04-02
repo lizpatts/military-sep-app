@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
@@ -12,67 +12,89 @@ export default function DashboardPage() {
   const [totalDays, setTotalDays] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (!profileData) {
-        router.push('/onboarding')
-        return
-      }
-
-      setProfile(profileData)
-
-      // Calculate days remaining
-      if (profileData.separation_date) {
-        const today = new Date()
-        const sepDate = new Date(profileData.separation_date)
-        const created = new Date(profileData.created_at)
-        const remaining = Math.ceil((sepDate - today) / (1000 * 60 * 60 * 24))
-        const total = Math.ceil((sepDate - created) / (1000 * 60 * 60 * 24))
-        setDaysRemaining(remaining)
-        setTotalDays(total)
-      }
-
-      // Calculate checklist progress
-      const { data: allItems } = await supabase
-        .from('checklist_items')
-        .select('id')
-
-      const { data: completedItems } = await supabase
-        .from('user_checklist_progress')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('completed', true)
-
-      if (allItems && allItems.length > 0) {
-        const pct = Math.round((completedItems?.length || 0) / allItems.length * 100)
-        setProgress(pct)
-      }
-
-      setLoading(false)
+  const loadProfile = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      router.push('/login')
+      return
     }
 
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single()
+
+    if (!profileData) {
+      router.push('/onboarding')
+      return
+    }
+
+    setProfile(profileData)
+
+    if (profileData.separation_date) {
+      const today = new Date()
+      const sepDate = new Date(profileData.separation_date)
+      const created = new Date(profileData.created_at)
+      const remaining = Math.ceil((sepDate - today) / (1000 * 60 * 60 * 24))
+      const total = Math.ceil((sepDate - created) / (1000 * 60 * 60 * 24))
+      setDaysRemaining(remaining)
+      setTotalDays(total)
+    }
+
+    const userBranch = profileData.branch
+    const userSepType = profileData.separation_type
+
+ const { data: allItems } = await supabase
+      .from('checklist_items')
+      .select('id')
+
+    const { data: customItems } = await supabase
+      .from('user_custom_tasks')
+      .select('id')
+      .eq('user_id', session.user.id)
+
+    const { data: completedItems } = await supabase
+      .from('user_checklist_progress')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .eq('completed', true)
+
+    const { data: completedCustom } = await supabase
+      .from('user_custom_tasks')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .eq('completed', true)
+
+    const totalCount = (allItems?.length || 0) + (customItems?.length || 0)
+    const completedCount = (completedItems?.length || 0) + (completedCustom?.length || 0)
+
+    console.log('total:', totalCount, 'completed:', completedCount)
+
+    if (totalCount > 0) {
+      const pct = Math.round((completedCount / totalCount) * 100)
+      setProgress(pct)
+    }
+    setLoading(false)
+  }, [router])
+
+  useEffect(() => {
     loadProfile()
-  }, [])
+  }, [loadProfile])
+
+  useEffect(() => {
+    const handleFocus = () => loadProfile()
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [loadProfile])
 
   const timeProgress = totalDays && daysRemaining
     ? Math.max(0, Math.round(((totalDays - daysRemaining) / totalDays) * 100))
     : 0
 
   if (loading) return (
-    <div style={{ 
-      display: 'flex', alignItems: 'center', 
+    <div style={{
+      display: 'flex', alignItems: 'center',
       justifyContent: 'center', minHeight: '100vh',
       backgroundColor: '#0a1628', color: 'white',
       fontFamily: 'sans-serif'
@@ -89,7 +111,6 @@ export default function DashboardPage() {
       fontFamily: 'sans-serif',
       padding: '2rem'
     }}>
-      {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>
           Welcome back, {profile?.full_name?.split(' ')[0]} 👋
@@ -99,14 +120,12 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Progress Cards */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
         gap: '1rem',
         marginBottom: '2rem'
       }}>
-        {/* Checklist Progress */}
         <div style={cardStyle}>
           <p style={{ color: '#8899aa', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
             Checklist Progress
@@ -119,14 +138,13 @@ export default function DashboardPage() {
               ...progressBarStyle,
               width: `${progress}%`,
               backgroundColor: '#22c55e'
-            }}/>
+            }} />
           </div>
           <p style={{ color: '#445566', fontSize: '0.8rem', marginTop: '0.5rem' }}>
             tasks completed
           </p>
         </div>
 
-        {/* Time Progress */}
         <div style={cardStyle}>
           <p style={{ color: '#8899aa', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
             Time to Separation
@@ -139,7 +157,7 @@ export default function DashboardPage() {
               ...progressBarStyle,
               width: `${timeProgress}%`,
               backgroundColor: '#2563eb'
-            }}/>
+            }} />
           </div>
           <p style={{ color: '#445566', fontSize: '0.8rem', marginTop: '0.5rem' }}>
             {timeProgress}% of timeline elapsed
@@ -147,16 +165,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Navigation Menu */}
-      <div style={{ 
-        display: 'grid', 
+      <div style={{
+        display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: '1rem'
       }}>
         {[
           { label: '✅ My Checklist', path: '/checklist' },
           { label: '🗺️ SkillBridge Map', path: '/skillbridge' },
-          { label: '📜 Free Certifications', path: '/certifications' },
+          { label: '📜 Certifications', path: '/certifications' },
           { label: '💰 Financial Calculators', path: '/calculators' },
           { label: '📰 Blog & Interviews', path: '/blog' },
           { label: '⚙️ Settings', path: '/settings' },
