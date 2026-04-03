@@ -282,6 +282,26 @@ export default function ChecklistPage() {
               opacity: hidden[item.id] === true ? 0.4 : completed[item.id] === true ? 0.7 : 1,
               borderColor: completed[item.id] === true ? '#22c55e' : '#1e3a5f'
             }}>
+              <div
+                onClick={() => toggleItem(item.id, item.isCustom)}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  border: '2px solid',
+                  borderColor: completed[item.id] === true ? '#22c55e' : '#445566',
+                  backgroundColor: completed[item.id] === true ? '#22c55e' : 'transparent',
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  marginTop: '2px'
+                }}
+              >
+                {completed[item.id] === true ? '✓' : ''}
+              </div>
               <div style={{ flex: 1 }}>
                 <p style={{
                   margin: 0,
