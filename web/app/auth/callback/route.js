@@ -10,7 +10,7 @@ export async function GET(request) {
 
   if (code) {
     const cookieStore = await cookies()
-    
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -35,7 +35,25 @@ export async function GET(request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     console.log('Exchange result:', data?.session ? 'success' : 'failed')
     console.log('Exchange error:', error?.message)
+
+    if (data?.session?.user) {
+      // Check if profile already exists
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, branch')
+        .eq('id', data.session.user.id)
+        .single()
+
+      // If profile exists and has branch set, go to dashboard
+      if (profile?.branch) {
+        return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
+      }
+    }
   }
 
+  // If no code (cancelled) go back to login, otherwise onboarding for new users
+  if (!code) {
+    return NextResponse.redirect(new URL('/login', requestUrl.origin))
+  }
   return NextResponse.redirect(new URL('/onboarding', requestUrl.origin))
 }

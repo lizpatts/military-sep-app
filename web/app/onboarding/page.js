@@ -27,26 +27,8 @@ export default function OnboardingPage() {
     'Early Release',
     'Other'
   ]
-useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Session check:', session?.user?.email)
-      if (session?.user) {
-        setUser(session.user)
-      } else {
-        // Wait a moment and try again
-        setTimeout(() => {
-          supabase.auth.getSession().then(({ data: { session } }) => {
-            console.log('Session retry:', session?.user?.email)
-            if (session?.user) {
-              setUser(session.user)
-            } else {
-              console.log('No session found after retry')
-            }
-          })
-        }, 2000)
-      }
-    })
 
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email)
@@ -56,7 +38,23 @@ useEffect(() => {
       }
     )
 
-    return () => subscription.unsubscribe()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user)
+      }
+    })
+
+    const timeout = setTimeout(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        router.push('/login')
+      }
+    }, 5000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [])
 
   const handleChange = (e) => {
@@ -115,21 +113,22 @@ useEffect(() => {
       </p>
 
       {!user && (
-        <p style={{ 
-          color: '#f59e0b', 
-          fontSize: '0.85rem', 
-          marginBottom: '1rem' 
-        }}>
-          Loading your session...
-        </p>
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <p style={{ color: '#f59e0b', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+            Loading your session...
+          </p>
+          <p style={{ color: '#445566', fontSize: '0.75rem' }}>
+            If this takes too long, you'll be redirected to sign in.
+          </p>
+        </div>
       )}
 
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '400px', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '1rem' 
+      <div style={{
+        width: '100%',
+        maxWidth: '400px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
       }}>
         <input
           name="full_name"
