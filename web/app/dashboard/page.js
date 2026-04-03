@@ -45,20 +45,19 @@ export default function DashboardPage() {
     const userBranch = profileData.branch
     const userSepType = profileData.separation_type
 
- const { data: allItems } = await supabase
+const { data: allItems } = await supabase
       .from('checklist_items')
       .select('id')
+
+    const { data: allProgress } = await supabase
+      .from('user_checklist_progress')
+      .select('checklist_item_id, hidden, completed')
+      .eq('user_id', session.user.id)
 
     const { data: customItems } = await supabase
       .from('user_custom_tasks')
       .select('id')
       .eq('user_id', session.user.id)
-
-    const { data: completedItems } = await supabase
-      .from('user_checklist_progress')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .eq('completed', true)
 
     const { data: completedCustom } = await supabase
       .from('user_custom_tasks')
@@ -66,8 +65,30 @@ export default function DashboardPage() {
       .eq('user_id', session.user.id)
       .eq('completed', true)
 
-    const totalCount = (allItems?.length || 0) + (customItems?.length || 0)
-    const completedCount = (completedItems?.length || 0) + (completedCustom?.length || 0)
+    // Build maps for hidden and completed
+    const hiddenMap = {}
+    const completedMap = {}
+    allProgress?.forEach(p => {
+      hiddenMap[p.checklist_item_id] = p.hidden
+      completedMap[p.checklist_item_id] = p.completed
+    })
+
+    // Count only items that are not (hidden AND uncompleted)
+    const activeItems = allItems?.filter(item => {
+      const isHidden = hiddenMap[item.id]
+      const isCompleted = completedMap[item.id]
+      if (isHidden && !isCompleted) return false
+      return true
+    }) || []
+
+    const completedChecklistCount = activeItems.filter(item => completedMap[item.id]).length
+    const totalCount = activeItems.length + (customItems?.length || 0)
+    const completedCount = completedChecklistCount + (completedCustom?.length || 0)
+
+
+
+
+
 
     console.log('total:', totalCount, 'completed:', completedCount)
 

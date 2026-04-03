@@ -10,7 +10,9 @@ export default function ChecklistPage() {
   const [profile, setProfile] = useState(null)
   const [items, setItems] = useState([])
   const [completed, setCompleted] = useState({})
- const [customTask, setCustomTask] = useState('')
+  const [hidden, setHidden] = useState({})
+  const [showHidden, setShowHidden] = useState(false)
+  const [customTask, setCustomTask] = useState('')
   const [customDueDate, setCustomDueDate] = useState('')
   const [customCategory, setCustomCategory] = useState('Personal')
   const [showCustomInput, setShowCustomInput] = useState(false)
@@ -36,7 +38,7 @@ export default function ChecklistPage() {
 
       setProfile(profileData)
 
-const { data: checklistItems } = await supabase
+      const { data: checklistItems } = await supabase
         .from('checklist_items')
         .select('*')
         .order('days_before_separation', { ascending: false })
@@ -52,8 +54,10 @@ const { data: checklistItems } = await supabase
         .eq('user_id', session.user.id)
 
       const completedMap = {}
+      const hiddenMap = {}
       progressData?.forEach(p => {
-        completedMap[p.checklist_item_id] = p.completed
+        completedMap[p.checklist_item_id] = p.completed === true
+        hiddenMap[p.checklist_item_id] = p.hidden === true
       })
 
       setItems([
@@ -61,14 +65,15 @@ const { data: checklistItems } = await supabase
         ...(customItems || []).map(t => ({ ...t, isCustom: true }))
       ])
       setCompleted(completedMap)
+      setHidden(hiddenMap)
       setLoading(false)
     }
 
     loadData()
   }, [])
 
-const toggleItem = async (itemId, isCustom) => {
-    const newValue = !completed[itemId]
+  const toggleItem = async (itemId, isCustom) => {
+    const newValue = !(completed[itemId] === true)
     setCompleted(prev => ({ ...prev, [itemId]: newValue }))
 
     if (isCustom) {
@@ -83,12 +88,50 @@ const toggleItem = async (itemId, isCustom) => {
         .upsert({
           user_id: user.id,
           checklist_item_id: itemId,
-          completed: newValue
+          completed: newValue,
+          hidden: hidden[itemId] === true
         }, {
           onConflict: 'user_id,checklist_item_id'
         })
       if (error) console.log('Progress save error:', error.message)
     }
+  }
+
+  const hideItem = async (itemId) => {
+    setHidden(prev => ({ ...prev, [itemId]: true }))
+    await supabase
+      .from('user_checklist_progress')
+      .upsert({
+        user_id: user.id,
+        checklist_item_id: itemId,
+        hidden: true,
+        completed: completed[itemId] === true
+      }, {
+        onConflict: 'user_id,checklist_item_id'
+      })
+  }
+
+  const restoreItem = async (itemId) => {
+    setHidden(prev => ({ ...prev, [itemId]: false }))
+    await supabase
+      .from('user_checklist_progress')
+      .upsert({
+        user_id: user.id,
+        checklist_item_id: itemId,
+        hidden: false,
+        completed: completed[itemId] === true
+      }, {
+        onConflict: 'user_id,checklist_item_id'
+      })
+  }
+
+  const deleteCustomTask = async (taskId) => {
+    if (!confirm('Delete this custom task?')) return
+    setItems(prev => prev.filter(item => item.id !== taskId))
+    await supabase
+      .from('user_custom_tasks')
+      .delete()
+      .eq('id', taskId)
   }
 
   const addCustomTask = async () => {
@@ -120,12 +163,25 @@ const toggleItem = async (itemId, isCustom) => {
       setShowCustomInput(false)
     }
   }
-  const filteredItems = filter === 'All'
-    ? items
-    : items.filter(item => item.category === filter)
 
-  const completedCount = Object.values(completed).filter(Boolean).length
-  const totalCount = items.length
+  const filteredItems = items.filter(item => {
+    const isHidden = hidden[item.id] === true
+    const isCompleted = completed[item.id] === true
+    if (isHidden && !showHidden) return false
+    if (filter !== 'All' && item.category !== filter) return false
+    return true
+  })
+
+  const hiddenCount = items.filter(item => hidden[item.id] === true).length
+
+  const activeItems = items.filter(item => {
+    const isHidden = hidden[item.id] === true
+    const isCompleted = completed[item.id] === true
+    if (isHidden && !isCompleted) return false
+    return true
+  })
+  const completedCount = activeItems.filter(item => completed[item.id] === true).length
+  const totalCount = activeItems.length
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   if (loading) return (
@@ -147,18 +203,13 @@ const toggleItem = async (itemId, isCustom) => {
       fontFamily: 'sans-serif',
       padding: '2rem'
     }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button
-          onClick={() => router.push('/dashboard')}
-          style={backButtonStyle}
-        >
+        <button onClick={() => router.push('/dashboard')} style={backButtonStyle}>
           ← Dashboard
         </button>
         <h1 style={{ fontSize: '1.5rem' }}>My Separation Checklist</h1>
       </div>
 
-      {/* Progress Bar */}
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <span style={{ color: '#8899aa', fontSize: '0.85rem' }}>Overall Progress</span>
@@ -176,13 +227,7 @@ const toggleItem = async (itemId, isCustom) => {
         </p>
       </div>
 
-      {/* Category Filter */}
-      <div style={{
-        display: 'flex',
-        gap: '0.5rem',
-        flexWrap: 'wrap',
-        marginBottom: '1.5rem'
-      }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
         {categories.map(cat => (
           <button
             key={cat}
@@ -203,49 +248,45 @@ const toggleItem = async (itemId, isCustom) => {
         ))}
       </div>
 
-      {/* Checklist Items */}
+      {hiddenCount > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <button
+            onClick={() => setShowHidden(!showHidden)}
+            style={{
+              backgroundColor: 'transparent',
+              border: '1px solid #1e3a5f',
+              color: '#445566',
+              borderRadius: '8px',
+              padding: '6px 14px',
+              fontSize: '0.8rem',
+              cursor: 'pointer'
+            }}
+          >
+            {showHidden ? '🔇 Hide muted items' : `🔇 Show ${hiddenCount} muted item${hiddenCount !== 1 ? 's' : ''}`}
+          </button>
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
         {filteredItems.length === 0 ? (
           <div style={{ color: '#445566', textAlign: 'center', padding: '2rem' }}>
-            {filter === 'All'
-              ? 'No checklist items yet. Add a custom task below!'
-              : `No items in the ${filter} category yet.`}
+            {filter === 'All' ? 'No checklist items yet.' : `No items in the ${filter} category.`}
           </div>
         ) : (
           filteredItems.map(item => (
-            <div
-              key={item.id}
-              onClick={() => toggleItem(item.id, item.isCustom)}
-              style={{
-                ...cardStyle,
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '1rem',
-                cursor: 'pointer',
-                opacity: completed[item.id] ? 0.6 : 1,
-                borderColor: completed[item.id] ? '#22c55e' : '#1e3a5f'
-              }}
-            >
-              <div style={{
-                width: '22px',
-                height: '22px',
-                borderRadius: '50%',
-                border: '2px solid',
-                borderColor: completed[item.id] ? '#22c55e' : '#445566',
-                backgroundColor: completed[item.id] ? '#22c55e' : 'transparent',
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.75rem'
-              }}>
-                {completed[item.id] ? '✓' : ''}
-              </div>
+            <div key={item.id} style={{
+              ...cardStyle,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '1rem',
+              opacity: hidden[item.id] === true ? 0.4 : completed[item.id] === true ? 0.7 : 1,
+              borderColor: completed[item.id] === true ? '#22c55e' : '#1e3a5f'
+            }}>
               <div style={{ flex: 1 }}>
                 <p style={{
                   margin: 0,
                   fontWeight: '500',
-                  textDecoration: completed[item.id] ? 'line-through' : 'none'
+                  textDecoration: completed[item.id] === true ? 'line-through' : 'none'
                 }}>
                   {item.title}
                   {item.isCustom && (
@@ -258,6 +299,18 @@ const toggleItem = async (itemId, isCustom) => {
                       color: '#8899aa'
                     }}>
                       custom
+                    </span>
+                  )}
+                  {hidden[item.id] === true && (
+                    <span style={{
+                      marginLeft: '8px',
+                      fontSize: '0.7rem',
+                      backgroundColor: '#1e3a5f',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      color: '#445566'
+                    }}>
+                      muted
                     </span>
                   )}
                 </p>
@@ -290,17 +343,81 @@ const toggleItem = async (itemId, isCustom) => {
                     {item.category}
                   </span>
                 )}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => toggleItem(item.id, item.isCustom)}
+                    style={{
+                      backgroundColor: completed[item.id] === true ? '#22c55e22' : 'transparent',
+                      border: '1px solid',
+                      borderColor: completed[item.id] === true ? '#22c55e' : '#1e3a5f',
+                      color: completed[item.id] === true ? '#22c55e' : '#8899aa',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {completed[item.id] === true ? '✓ Done' : 'Mark Done'}
+                  </button>
+                  {!item.isCustom && hidden[item.id] !== true && (
+                    <button
+                      onClick={() => hideItem(item.id)}
+                      style={{
+                        backgroundColor: 'transparent',
+                        border: '1px solid #1e3a5f',
+                        color: '#445566',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Mute
+                    </button>
+                  )}
+                  {!item.isCustom && hidden[item.id] === true && (
+                    <button
+                      onClick={() => restoreItem(item.id)}
+                      style={{
+                        backgroundColor: 'transparent',
+                        border: '1px solid #1e3a5f',
+                        color: '#8899aa',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Restore
+                    </button>
+                  )}
+                  {item.isCustom && (
+                    <button
+                      onClick={() => deleteCustomTask(item.id)}
+                      style={{
+                        backgroundColor: 'transparent',
+                        border: '1px solid #ef444455',
+                        color: '#ef4444',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Add Custom Task */}
       <div style={cardStyle}>
         {showCustomInput ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
- <input
+            <input
               value={customTask}
               onChange={e => setCustomTask(e.target.value)}
               placeholder="Enter your custom task..."
@@ -341,10 +458,7 @@ const toggleItem = async (itemId, isCustom) => {
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setShowCustomInput(true)}
-            style={secondaryButtonStyle}
-          >
+          <button onClick={() => setShowCustomInput(true)} style={secondaryButtonStyle}>
             + Add Custom Task
           </button>
         )}
