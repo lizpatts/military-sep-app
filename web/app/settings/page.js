@@ -66,23 +66,21 @@ export default function SettingsPage() {
     setFormData(prev => ({ ...prev, [e.target.name]: val }))
   }
 
-  const handleSave = async () => {
+const handleSave = async () => {
     const isChangingDate = formData.separation_date !== profile?.separation_date
-    const isChangingBranch = formData.branch !== profile?.branch
-    const isChangingSepType = formData.separation_type !== profile?.separation_type
 
     if (isChangingDate) {
-      const extended = confirm(
-        'You are changing your separation date.\n\nDid you extend your contract?\n\nClick OK for Yes (keeps your progress)\nClick Cancel for No (updates date normally)'
-      )
-      if (extended) {
-        const oldDate = new Date(profile.separation_date)
-        const newDate = new Date(formData.separation_date)
-        const diffDays = Math.round((newDate - oldDate) / (1000 * 60 * 60 * 24))
-        if (diffDays > 0) {
-          alert(`Got it! Your separation date has been pushed forward by ${diffDays} days. All your checklist progress and tasks have been kept.`)
-        }
-      }
+      const newDate = new Date(formData.separation_date)
+      const today = new Date()
+      const daysUntilNew = Math.ceil((newDate - today) / (1000 * 60 * 60 * 24))
+      const isUnderOneYear = daysUntilNew <= 365 && daysUntilNew > 0
+
+      const message = isUnderOneYear
+        ? `Are you sure you want to update your separation date to ${newDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}?\n\nSince your new date is less than a year away, your checklist will prioritize high priority items first. Your existing progress and tasks will not be affected.`
+        : `Are you sure you want to update your separation date to ${newDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}?\n\nYour existing checklist progress and tasks will not be affected.`
+
+      const confirmed = confirm(message)
+      if (!confirmed) return
     }
 
     setSaving(true)
@@ -112,7 +110,6 @@ export default function SettingsPage() {
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
-
   const handleSignOut = async () => {
     if (!confirm('Are you sure you want to sign out?')) return
     await supabase.auth.signOut()

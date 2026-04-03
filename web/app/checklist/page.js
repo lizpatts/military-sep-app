@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
+
+
 export default function ChecklistPage() {
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -21,6 +23,9 @@ export default function ChecklistPage() {
 
   const categories = ['All', 'Medical', 'Finance', 'Housing', 'Legal', 'Career', 'Personal']
 
+  const [showAllItems, setShowAllItems] = useState(false)
+  const [isUnderOneYear, setIsUnderOneYear] = useState(false)
+
   useEffect(() => {
     const loadData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -37,6 +42,12 @@ export default function ChecklistPage() {
         .single()
 
       setProfile(profileData)
+
+      if (profileData?.separation_date) {
+        const daysLeft = Math.ceil((new Date(profileData.separation_date) - new Date()) / (1000 * 60 * 60 * 24))
+        setIsUnderOneYear(daysLeft <= 365 && daysLeft > 0)
+      }
+      
 
       const { data: checklistItems } = await supabase
         .from('checklist_items')
@@ -164,13 +175,23 @@ export default function ChecklistPage() {
     }
   }
 
-  const filteredItems = items.filter(item => {
+const filteredItems = items.filter(item => {
     const isHidden = hidden[item.id] === true
     const isCompleted = completed[item.id] === true
     if (isHidden && !showHidden) return false
     if (filter !== 'All' && item.category !== filter) return false
+    if (isUnderOneYear && !showAllItems && !item.isCustom) {
+      if (item.priority !== 'high' && item.priority !== 'critical') return false
+    }
     return true
   })
+
+  const highPriorityItems = items.filter(i => 
+    !i.isCustom && (i.priority === 'high' || i.priority === 'critical')
+  )
+  const allHighPriorityDone = highPriorityItems.length > 0 && 
+    highPriorityItems.every(i => completed[i.id] === true)
+
 
   const hiddenCount = items.filter(item => hidden[item.id] === true).length
 
@@ -247,6 +268,41 @@ export default function ChecklistPage() {
           </button>
         ))}
       </div>
+
+      {/* Under 1 year mode banner */}
+      {isUnderOneYear && (
+        <div style={{
+          backgroundColor: '#f59e0b11',
+          border: '1px solid #f59e0b',
+          borderRadius: '10px',
+          padding: '1rem',
+          marginBottom: '1rem'
+        }}>
+          <p style={{ margin: '0 0 4px', color: '#f59e0b', fontWeight: '500', fontSize: '0.9rem' }}>
+            ⏰ Crunch time mode — showing high priority items only
+          </p>
+          <p style={{ margin: 0, color: '#8899aa', fontSize: '0.8rem' }}>
+            These are the most important tasks to complete before your separation date.
+          </p>
+          {allHighPriorityDone && (
+            <button
+              onClick={() => setShowAllItems(!showAllItems)}
+              style={{
+                marginTop: '0.75rem',
+                backgroundColor: 'transparent',
+                border: '1px solid #22c55e',
+                color: '#22c55e',
+                borderRadius: '6px',
+                padding: '6px 14px',
+                fontSize: '0.8rem',
+                cursor: 'pointer'
+              }}
+            >
+              {showAllItems ? 'Show high priority only' : '✓ All high priority done — show remaining tasks'}
+            </button>
+          )}
+        </div>
+      )}
 
       {hiddenCount > 0 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

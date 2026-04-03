@@ -132,6 +132,53 @@ const { data: allItems } = await supabase
       fontFamily: 'sans-serif',
       padding: '2rem'
     }}>
+{/* Less than 1 year warning */}
+      {daysRemaining !== null && daysRemaining <= 365 && daysRemaining > 0 && (
+        <div style={{
+          backgroundColor: '#f59e0b11',
+          border: '1px solid #f59e0b',
+          borderRadius: '12px',
+          padding: '1.25rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '1rem'
+        }}>
+          <span style={{ fontSize: '1.5rem' }}>⏰</span>
+          <div>
+            <p style={{ margin: '0 0 4px', fontWeight: '500', color: '#f59e0b' }}>
+              You're less than a year out — it's crunch time!
+            </p>
+            <p style={{ margin: 0, color: '#8899aa', fontSize: '0.85rem' }}>
+              {daysRemaining} days until separation. Your dashboard is now prioritizing the most important items. Don't wait — start checking things off today.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {daysRemaining !== null && daysRemaining <= 0 && (
+        <div style={{
+          backgroundColor: '#22c55e11',
+          border: '1px solid #22c55e',
+          borderRadius: '12px',
+          padding: '1.25rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '1rem'
+        }}>
+          <span style={{ fontSize: '1.5rem' }}>🎖️</span>
+          <div>
+            <p style={{ margin: '0 0 4px', fontWeight: '500', color: '#22c55e' }}>
+              Congratulations — you've separated!
+            </p>
+            <p style={{ margin: 0, color: '#8899aa', fontSize: '0.85rem' }}>
+              Welcome to the other side. Check in with your checklist and don't forget to take care of yourself during this transition.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>
           Welcome back, {profile?.full_name?.split(' ')[0]} 👋
