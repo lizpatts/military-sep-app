@@ -311,9 +311,10 @@ useEffect(() => {
                     <p style={{ margin: '0 0 4px', color: '#8899aa', fontSize: '0.8rem' }}>
                       {loc.city}, {loc.state}
                     </p>
-                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '6px' }}>
+                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '6px' }}>
                       {loc.industry && <span style={tagStyle('#2563eb')}>{loc.industry}</span>}
                       {loc.duration_weeks && <span style={tagStyle('#0891b2')}>~{loc.duration_weeks}wks</span>}
+                      {loc.is_community_submitted && <span style={tagStyle('#22c55e')}>Community</span>}
                     </div>
                   </div>
                   <button
@@ -330,14 +331,31 @@ useEffect(() => {
                     {favorites[loc.id] ? '★' : '☆'}
                   </button>
                 </div>
-                {loc.url && (
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '8px', flexWrap: 'wrap' }}>
+                  {loc.url && (
+                    <div
+                      onClick={e => { e.stopPropagation(); window.open(loc.url, '_blank') }}
+                      style={{ color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer' }}
+                    >
+                      View opportunity →
+                    </div>
+                  )}
                   <div
-                    onClick={e => { e.stopPropagation(); window.open(loc.url, '_blank') }}
-                    style={{ color: '#2563eb', fontSize: '0.8rem', marginTop: '6px', cursor: 'pointer' }}
+                    onClick={e => {
+                      e.stopPropagation()
+                      const text = `SkillBridge Opportunity: ${loc.employer_name} in ${loc.city}, ${loc.state}${loc.duration_weeks ? ` (~${loc.duration_weeks} weeks)` : ''}${loc.url ? `\n${loc.url}` : ''}`
+                      if (navigator.share) {
+                        navigator.share({ title: loc.employer_name, text, url: loc.url || window.location.href })
+                      } else {
+                        navigator.clipboard.writeText(text)
+                        alert('Copied to clipboard!')
+                      }
+                    }}
+                    style={{ color: '#8899aa', fontSize: '0.8rem', cursor: 'pointer' }}
                   >
-                    View opportunity →
+                    Share →
                   </div>
-                )}
+                </div>
               </div>
             ))
           )}
