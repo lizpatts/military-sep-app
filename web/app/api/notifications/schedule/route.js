@@ -1,21 +1,18 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-)
-
 export async function GET(request) {
-  // Verify this is called by a cron job with a secret
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const { createClient } = await import('@supabase/supabase-js')
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  )
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Get all users with email notifications enabled
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, separation_date, notify_email, full_name')
@@ -34,7 +31,6 @@ export async function GET(request) {
     const daysUntil = Math.round((sepDate - today) / (1000 * 60 * 60 * 24))
     const daysAfter = Math.round((today - sepDate) / (1000 * 60 * 60 * 24))
 
-    // Check which notification to send
     let type = null
     if (daysUntil === 365) type = '365_days'
     else if (daysUntil === 180) type = '180_days'
@@ -48,7 +44,6 @@ export async function GET(request) {
 
     if (!type) continue
 
-    // Check if we already sent this notification
     const { data: existing } = await supabase
       .from('notification_log')
       .select('id')
@@ -58,14 +53,12 @@ export async function GET(request) {
 
     if (existing) continue
 
-    // Send the email
     await fetch(`${baseUrl}/api/notifications/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: profile.id, type })
     })
 
-    // Log it so we don't send twice
     await supabase.from('notification_log').insert({
       user_id: profile.id,
       type,
