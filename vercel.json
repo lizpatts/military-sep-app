@@ -1,0 +1,9 @@
+{
+  "rootDirectory": "web",
+  "crons": [
+    {
+      "path": "/api/notifications/schedule",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}
