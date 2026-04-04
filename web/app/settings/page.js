@@ -84,10 +84,10 @@ const handleSave = async () => {
     }
 
     setSaving(true)
-
-    const { error } = await supabase
+const { error } = await supabase
       .from('profiles')
       .update({
+        email: user.email,
         full_name: formData.full_name,
         branch: formData.branch,
         separation_type: formData.separation_type,
@@ -98,6 +98,7 @@ const handleSave = async () => {
         notify_sms: formData.notify_sms
       })
       .eq('id', user.id)
+      
 
     if (error) {
       alert('Error saving: ' + error.message)

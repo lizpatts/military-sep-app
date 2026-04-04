@@ -75,11 +75,11 @@ export default function OnboardingPage() {
     }
 
     setLoading(true)
-
     const { error } = await supabase
       .from('profiles')
       .upsert({
         id: user.id,
+        email: user.email,
         ...formData
       })
 
