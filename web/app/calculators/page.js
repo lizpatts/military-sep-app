@@ -604,7 +604,7 @@ const primaryButtonStyle = {
 }
 
 function VADisabilityCalculator() {
-  const [ratings, setRatings] = useState([{ id: 1, rating: '' }])
+  const [ratings, setRatings] = useState([{ id: 1, rating: '', name: '' }])
   const [dependents, setDependents] = useState({
     spouse: false,
     spouseAA: false,
@@ -614,36 +614,91 @@ function VADisabilityCalculator() {
   })
   const [result, setResult] = useState(null)
   const [activeSection, setActiveSection] = useState('combined')
+  const [user, setUser] = useState(null)
+  const [scenarios, setScenarios] = useState([])
+  const [scenarioName, setScenarioName] = useState('')
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [showScenarios, setShowScenarios] = useState(false)
+  const [saveMessage, setSaveMessage] = useState(null)
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUser(session.user)
+        loadScenarios(session.user.id)
+      }
+    }
+    init()
+  }, [])
+
+  async function loadScenarios(userId) {
+    const { data } = await supabase
+      .from('va_disability_scenarios')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    setScenarios(data || [])
+  }
+
+  async function saveScenario() {
+    if (!user) { alert('Sign in to save scenarios.'); return }
+    if (!result) { alert('Calculate a result first.'); return }
+    if (!scenarioName.trim()) { alert('Please name this scenario.'); return }
+    setSaveLoading(true)
+    setSaveMessage(null)
+    const { error } = await supabase
+      .from('va_disability_scenarios')
+      .insert({
+        user_id: user.id,
+        name: scenarioName.trim(),
+        ratings,
+        dependents,
+        result
+      })
+    if (error) {
+      setSaveMessage({ type: 'error', text: 'Failed to save. Try again.' })
+    } else {
+      setSaveMessage({ type: 'success', text: `"${scenarioName}" saved!` })
+      setScenarioName('')
+      loadScenarios(user.id)
+    }
+    setSaveLoading(false)
+  }
+
+  async function deleteScenario(id) {
+    if (!confirm('Delete this scenario?')) return
+    await supabase.from('va_disability_scenarios').delete().eq('id', id)
+    setScenarios(prev => prev.filter(s => s.id !== id))
+  }
+
+  function loadScenario(scenario) {
+    setRatings(scenario.ratings)
+    setDependents(scenario.dependents)
+    setResult(scenario.result)
+    setShowScenarios(false)
+    setSaveMessage({ type: 'success', text: `Loaded "${scenario.name}"` })
+  }
 
   // 2024 VA compensation rates
   const vaRates = {
     10: { alone: 171.23 },
     20: { alone: 338.49 },
-    30: { alone: 524.31, spouse: 586.31, spouseAA: 654.31, per_parent: 524.31, per_child: 524.31 },
-    40: { alone: 755.28, spouse: 838.28, spouseAA: 921.28, per_parent: 755.28, per_child: 755.28 },
-    50: { alone: 1075.16, spouse: 1179.16, spouseAA: 1283.16, per_parent: 1075.16, per_child: 1075.16 },
-    60: { alone: 1361.88, spouse: 1486.88, spouseAA: 1611.88, per_parent: 1361.88, per_child: 1361.88 },
-    70: { alone: 1716.28, spouse: 1862.28, spouseAA: 2008.28, per_parent: 1716.28, per_child: 1716.28 },
-    80: { alone: 1995.01, spouse: 2162.01, spouseAA: 2329.01, per_parent: 1995.01, per_child: 1995.01 },
-    90: { alone: 2241.91, spouse: 2429.91, spouseAA: 2617.91, per_parent: 2241.91, per_child: 2241.91 },
-    100: { alone: 3737.85, spouse: 3946.25, spouseAA: 4154.65, per_parent: 3737.85, per_child: 3737.85 }
+    30: { alone: 524.31, spouse: 586.31, spouseAA: 654.31 },
+    40: { alone: 755.28, spouse: 838.28, spouseAA: 921.28 },
+    50: { alone: 1075.16, spouse: 1179.16, spouseAA: 1283.16 },
+    60: { alone: 1361.88, spouse: 1486.88, spouseAA: 1611.88 },
+    70: { alone: 1716.28, spouse: 1862.28, spouseAA: 2008.28 },
+    80: { alone: 1995.01, spouse: 2162.01, spouseAA: 2329.01 },
+    90: { alone: 2241.91, spouse: 2429.91, spouseAA: 2617.91 },
+    100: { alone: 3737.85, spouse: 3946.25, spouseAA: 4154.65 }
   }
 
-  const addRating = () => {
-    setRatings(prev => [...prev, { id: Date.now(), rating: '' }])
-  }
-
-  const removeRating = (id) => {
-    if (ratings.length === 1) return
-    setRatings(prev => prev.filter(r => r.id !== id))
-  }
-
-  const updateRating = (id, value) => {
-    setRatings(prev => prev.map(r => r.id === id ? { ...r, rating: value } : r))
-  }
+  const addRating = () => setRatings(prev => [...prev, { id: Date.now(), rating: '', name: '' }])
+  const removeRating = (id) => { if (ratings.length > 1) setRatings(prev => prev.filter(r => r.id !== id)) }
+  const updateRating = (id, field, value) => setRatings(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r))
 
   const calculateCombinedRating = (ratingsList) => {
-    // VA "whole person" method
     const sorted = [...ratingsList].sort((a, b) => b - a)
     let remaining = 100
     let combined = 0
@@ -658,32 +713,25 @@ function VADisabilityCalculator() {
   const roundToNearest10 = (val) => Math.round(val / 10) * 10
 
   const calculate = () => {
-    const validRatings = ratings
-      .map(r => parseFloat(r.rating))
-      .filter(r => !isNaN(r) && r > 0 && r <= 100)
+    const validRatings = ratings.filter(r => !isNaN(parseFloat(r.rating)) && parseFloat(r.rating) > 0)
+    if (validRatings.length === 0) { alert('Please enter at least one disability rating.'); return }
 
-    if (validRatings.length === 0) {
-      alert('Please enter at least one disability rating.')
-      return
-    }
-
-    const combinedRaw = calculateCombinedRating(validRatings)
+    const numericRatings = validRatings.map(r => parseFloat(r.rating))
+    const combinedRaw = calculateCombinedRating(numericRatings)
     const combinedRounded = roundToNearest10(Math.min(combinedRaw, 100))
 
-    // Get base rate
     const rates = vaRates[combinedRounded] || vaRates[100]
     let monthly = rates.alone
 
-    // Add dependent adjustments (only for 30%+)
     if (combinedRounded >= 30) {
-      if (dependents.spouse) monthly = rates.spouse || monthly
-      if (dependents.spouseAA) monthly = rates.spouseAA || monthly
-      const parents = parseInt(dependents.parents) || 0
+      if (dependents.spouseAA && rates.spouseAA) monthly = rates.spouseAA
+      else if (dependents.spouse && rates.spouse) monthly = rates.spouse
       const children = parseInt(dependents.children) || 0
       const over18 = parseInt(dependents.over18Children) || 0
-      if (parents > 0) monthly += (vaRates[combinedRounded]?.per_parent - vaRates[combinedRounded]?.alone || 0) * parents * 0.3
+      const parents = parseInt(dependents.parents) || 0
       if (children > 0) monthly += 103.55 * children
       if (over18 > 0) monthly += 334.49 * over18
+      if (parents > 0) monthly += 43.00 * parents
     }
 
     const isPT = combinedRounded === 100
@@ -696,7 +744,7 @@ function VADisabilityCalculator() {
       annual: (monthly * 12).toFixed(2),
       isPT,
       isTDIUEligible,
-      ratingBreakdown: validRatings.sort((a, b) => b - a)
+      ratingBreakdown: validRatings.map(r => ({ rating: parseFloat(r.rating), name: r.name || null })).sort((a, b) => b.rating - a.rating)
     })
   }
 
@@ -710,13 +758,55 @@ function VADisabilityCalculator() {
   return (
     <div>
       <div style={calcStyle.card}>
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>VA Disability Calculator</h2>
-        <p style={{ color: '#8899aa', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-          Estimates combined disability rating and monthly compensation using 2024 VA rates.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>VA Disability Calculator</h2>
+            <p style={{ color: '#8899aa', fontSize: '0.85rem', marginTop: '4px', marginBottom: 0 }}>
+              Estimates combined rating and monthly compensation using 2024 VA rates.
+            </p>
+          </div>
+          {user && (
+            <button onClick={() => setShowScenarios(!showScenarios)} style={{
+              background: showScenarios ? '#2563eb22' : 'transparent',
+              border: '1px solid #2563eb', color: '#2563eb',
+              borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600
+            }}>
+              📋 My Scenarios ({scenarios.length})
+            </button>
+          )}
+        </div>
+
+        {/* Saved scenarios panel */}
+        {showScenarios && (
+          <div style={{ background: '#0a1628', border: '1px solid #1e3a5f', borderRadius: '10px', padding: '1rem', marginBottom: '1.5rem', marginTop: '1rem' }}>
+            <h3 style={{ color: 'white', fontSize: '0.95rem', margin: '0 0 1rem' }}>Saved Scenarios</h3>
+            {scenarios.length === 0 ? (
+              <p style={{ color: '#445566', fontSize: '0.85rem' }}>No saved scenarios yet. Calculate a result and save it below.</p>
+            ) : (
+              scenarios.map(s => (
+                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#0f2035', borderRadius: '8px', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <p style={{ color: 'white', margin: 0, fontWeight: 600, fontSize: '0.9rem' }}>{s.name}</p>
+                    <p style={{ color: '#8899aa', margin: 0, fontSize: '0.8rem' }}>
+                      {s.result.combinedRounded}% combined · ${parseFloat(s.result.monthly).toLocaleString()}/mo · {new Date(s.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => loadScenario(s)} style={{ background: '#2563eb22', color: '#2563eb', border: '1px solid #2563eb', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                      Load
+                    </button>
+                    <button onClick={() => deleteScenario(s.id)} style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef444455', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Section tabs */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', marginTop: '1rem' }}>
           {[{ id: 'combined', label: 'Combined Rating' }, { id: 'compensation', label: 'Monthly Pay' }].map(s => (
             <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
               padding: '8px 16px', borderRadius: '8px', border: '1px solid',
@@ -732,17 +822,23 @@ function VADisabilityCalculator() {
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={calcStyle.label}>Your Disability Ratings (%)</label>
           <p style={{ color: '#445566', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-            Add each condition separately. The VA combines them using the "whole person" method — not simple addition.
+            Add each condition separately. Name is optional but helps you track what's what.
           </p>
           {ratings.map((r, i) => (
-            <div key={r.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-              <span style={{ color: '#445566', fontSize: '0.85rem', minWidth: '80px' }}>Condition {i + 1}</span>
+            <div key={r.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ color: '#445566', fontSize: '0.85rem', minWidth: '24px' }}>{i + 1}.</span>
+              <input
+                value={r.name}
+                onChange={e => updateRating(r.id, 'name', e.target.value)}
+                placeholder="Condition name (optional)"
+                style={{ ...calcStyle.input, maxWidth: '220px' }}
+              />
               <input
                 type="number" min="0" max="100" step="10"
                 value={r.rating}
-                onChange={e => updateRating(r.id, e.target.value)}
+                onChange={e => updateRating(r.id, 'rating', e.target.value)}
                 placeholder="e.g. 70"
-                style={{ ...calcStyle.input, maxWidth: '120px' }}
+                style={{ ...calcStyle.input, maxWidth: '100px' }}
               />
               <span style={{ color: '#445566' }}>%</span>
               {ratings.length > 1 && (
@@ -763,7 +859,7 @@ function VADisabilityCalculator() {
 
         {/* Dependents */}
         <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#0a1628', borderRadius: '8px', border: '1px solid #1e3a5f' }}>
-          <p style={{ color: '#8899aa', fontSize: '0.85rem', marginBottom: '0.75rem', margin: '0 0 0.75rem' }}>
+          <p style={{ color: '#8899aa', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
             Dependents <span style={{ color: '#445566', fontSize: '0.75rem' }}>(only affects pay at 30%+)</span>
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -777,15 +873,15 @@ function VADisabilityCalculator() {
             </label>
             <div>
               <label style={calcStyle.label}>Dependent Children (under 18)</label>
-              <input type="number" min="0" value={dependents.children} onChange={e => setDependents(p => ({ ...p, children: e.target.value }))} style={{ ...calcStyle.input }} />
+              <input type="number" min="0" value={dependents.children} onChange={e => setDependents(p => ({ ...p, children: e.target.value }))} style={calcStyle.input} />
             </div>
             <div>
               <label style={calcStyle.label}>Children in School (18-23)</label>
-              <input type="number" min="0" value={dependents.over18Children} onChange={e => setDependents(p => ({ ...p, over18Children: e.target.value }))} style={{ ...calcStyle.input }} />
+              <input type="number" min="0" value={dependents.over18Children} onChange={e => setDependents(p => ({ ...p, over18Children: e.target.value }))} style={calcStyle.input} />
             </div>
             <div>
               <label style={calcStyle.label}>Dependent Parents</label>
-              <input type="number" min="0" max="2" value={dependents.parents} onChange={e => setDependents(p => ({ ...p, parents: e.target.value }))} style={{ ...calcStyle.input }} />
+              <input type="number" min="0" max="2" value={dependents.parents} onChange={e => setDependents(p => ({ ...p, parents: e.target.value }))} style={calcStyle.input} />
             </div>
           </div>
         </div>
@@ -831,14 +927,14 @@ function VADisabilityCalculator() {
                 <p style={{ color: '#8899aa', fontSize: '0.8rem', margin: '0 0 8px' }}>How VA combines your ratings (whole person method):</p>
                 {result.ratingBreakdown.reduce((acc, r, i) => {
                   const remaining = i === 0 ? 100 : acc.remaining
-                  const contribution = (r / 100) * remaining
+                  const contribution = (r.rating / 100) * remaining
                   const newRemaining = remaining - contribution
-                  acc.steps.push({ rating: r, remaining, contribution, newRemaining })
+                  acc.steps.push({ ...r, remaining, contribution, newRemaining })
                   acc.remaining = newRemaining
                   return acc
                 }, { steps: [], remaining: 100 }).steps.map((step, i) => (
                   <p key={i} style={{ color: '#445566', fontSize: '0.75rem', margin: '2px 0', fontFamily: 'monospace' }}>
-                    {i === 0 ? 'Start' : 'Then'}: {step.rating}% of {step.remaining.toFixed(1)}% remaining = {step.contribution.toFixed(1)}% → {step.newRemaining.toFixed(1)}% remaining
+                    {i === 0 ? 'Start' : 'Then'}: {step.name ? `${step.name} (${step.rating}%)` : `${step.rating}%`} of {step.remaining.toFixed(1)}% remaining = {step.contribution.toFixed(1)}% → {step.newRemaining.toFixed(1)}% left
                   </p>
                 ))}
                 <p style={{ color: '#2563eb', fontSize: '0.8rem', margin: '8px 0 0', fontWeight: 600 }}>
@@ -851,7 +947,7 @@ function VADisabilityCalculator() {
                 <div style={{ padding: '0.75rem', backgroundColor: '#14532d', borderRadius: '8px', border: '1px solid #22c55e', marginBottom: '0.75rem' }}>
                   <p style={{ color: '#22c55e', fontWeight: 600, margin: '0 0 4px' }}>🎖️ 100% — Permanent & Total (P&T) Eligible</p>
                   <p style={{ color: '#8899aa', fontSize: '0.8rem', margin: 0 }}>
-                    At 100%, you may qualify for P&T status, which means your rating is considered permanent and won't be reduced. Benefits include: free healthcare for dependents (CHAMPVA), free tuition at many state schools (DEA Chapter 35), property tax exemptions in most states, and more.
+                    At 100%, you may qualify for P&T status meaning your rating won't be reduced. Benefits include free healthcare for dependents (CHAMPVA), free tuition at many state schools (DEA Ch. 35), property tax exemptions in most states, and more.
                   </p>
                 </div>
               )}
@@ -861,13 +957,45 @@ function VADisabilityCalculator() {
                 <div style={{ padding: '0.75rem', backgroundColor: '#1e3a5f', borderRadius: '8px', border: '1px solid #2563eb', marginBottom: '0.75rem' }}>
                   <p style={{ color: '#2563eb', fontWeight: 600, margin: '0 0 4px' }}>💼 You may qualify for TDIU</p>
                   <p style={{ color: '#8899aa', fontSize: '0.8rem', margin: 0 }}>
-                    Total Disability Individual Unemployability (TDIU) allows veterans rated 60%+ (or 40%+ with multiple conditions) to receive 100% compensation pay if their disabilities prevent them from holding substantially gainful employment. This is paid at the 100% rate (${(3737.85).toLocaleString()}/mo) even if your combined rating is less.
+                    Total Disability Individual Unemployability (TDIU) allows veterans rated 60%+ (or 40%+ with multiple conditions) to receive 100% pay if disabilities prevent gainful employment. Paid at the 100% rate (${(3737.85).toLocaleString()}/mo) even if your combined rating is less.
                   </p>
                 </div>
               )}
 
+              {/* Save scenario */}
+              {user ? (
+                <div style={{ marginTop: '1rem', padding: '1rem', background: '#0f2035', borderRadius: '8px', border: '1px solid #1e3a5f' }}>
+                  <p style={{ color: '#8899aa', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>💾 Save this scenario</p>
+                  {saveMessage && (
+                    <p style={{ color: saveMessage.type === 'success' ? '#22c55e' : '#ef4444', fontSize: '0.85rem', margin: '0 0 0.5rem' }}>
+                      {saveMessage.text}
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      value={scenarioName}
+                      onChange={e => setScenarioName(e.target.value)}
+                      placeholder='e.g. "Best case" or "Current claim"'
+                      onKeyDown={e => e.key === 'Enter' && saveScenario()}
+                      style={{ ...calcStyle.input, flex: 1 }}
+                    />
+                    <button onClick={saveScenario} disabled={saveLoading} style={{
+                      background: '#2563eb', color: 'white', border: 'none',
+                      borderRadius: '8px', padding: '10px 20px', cursor: 'pointer',
+                      fontWeight: 600, whiteSpace: 'nowrap', opacity: saveLoading ? 0.6 : 1
+                    }}>
+                      {saveLoading ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginTop: '1rem', padding: '1rem', background: '#0f2035', borderRadius: '8px', border: '1px solid #1e3a5f', textAlign: 'center' }}>
+                  <p style={{ color: '#8899aa', fontSize: '0.85rem', margin: '0 0 0.5rem' }}>Sign in to save and compare scenarios</p>
+                </div>
+              )}
+
               <p style={{ color: '#445566', fontSize: '0.75rem', marginTop: '0.75rem' }}>
-                ⚠️ Estimates based on 2024 VA rates. Actual compensation may vary. Always verify with the VA or an accredited VSO. Rates updated annually.
+                ⚠️ Estimates based on 2024 VA rates. Always verify with the VA or an accredited VSO.
               </p>
             </div>
 
