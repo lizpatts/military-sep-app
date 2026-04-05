@@ -21,8 +21,7 @@ export default function SkillBridgePage() {
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitMessage, setSubmitMessage] = useState(null)
   const [form, setForm] = useState({
-    employer_name: '', industry: 'Technology', city: '', state: '',
-    latitude: '', longitude: '', duration_weeks: '12',
+    employer_name: '', industry: 'Technology', city: '', state: '', duration_weeks: '12',
     url: '', description: '', branches_eligible: 'all'
   })
 
@@ -247,7 +246,7 @@ export default function SkillBridgePage() {
 
   const handleSubmit = async () => {
     if (!user) { alert('Please sign in to submit a location'); return }
-    if (!form.employer_name || !form.city || !form.state || !form.latitude || !form.longitude) {
+    if (!form.employer_name || !form.city || !form.state) {
       setSubmitMessage({ type: 'error', text: 'Please fill in all required fields including coordinates.' })
       return
     }
@@ -317,10 +316,9 @@ export default function SkillBridgePage() {
               { label: 'Employer Name *', key: 'employer_name', placeholder: 'e.g. Raytheon Technologies' },
               { label: 'City *', key: 'city', placeholder: 'e.g. San Diego' },
               { label: 'State *', key: 'state', placeholder: 'e.g. CA' },
-              { label: 'Latitude *', key: 'latitude', placeholder: 'e.g. 32.7157' },
-              { label: 'Longitude *', key: 'longitude', placeholder: 'e.g. -117.1611' },
               { label: 'Program URL', key: 'url', placeholder: 'https://...' },
               { label: 'Description', key: 'description', placeholder: 'Brief description of the opportunity...' },
+              { label: 'Anything else other military members should know?', key: 'notes', placeholder: 'e.g. Security clearance preferred, remote-friendly, great for 68Ws...' },
             ].map(field => (
               <div key={field.key} style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', color: '#8899aa', fontSize: '0.8rem', marginBottom: '4px' }}>
@@ -352,9 +350,7 @@ export default function SkillBridgePage() {
               />
             </div>
 
-            <p style={{ color: '#445566', fontSize: '0.75rem', marginBottom: '1.5rem' }}>
-              💡 To find coordinates: go to <a href="https://maps.google.com" target="_blank" style={{ color: '#2563eb' }}>Google Maps</a>, right-click the location, and copy the numbers shown.
-            </p>
+
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button onClick={() => setShowSubmitForm(false)}
@@ -372,7 +368,14 @@ export default function SkillBridgePage() {
 
       <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #1e3a5f' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-          <button onClick={() => router.push('/dashboard')} style={backButtonStyle}>← Dashboard</button>
+          <button onClick={() => {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('guest') === 'true') {
+    router.push(`/dashboard?${params.toString()}`)
+  } else {
+    router.push('/dashboard')
+  }
+}} style={backButtonStyle}>← Dashboard</button>
           <h1 style={{ fontSize: '1.5rem', margin: 0 }}>SkillBridge Map</h1>
           <span style={{ color: '#445566', fontSize: '0.85rem', marginLeft: 'auto' }}>
             {filteredLocations.length} location{filteredLocations.length !== 1 ? 's' : ''}

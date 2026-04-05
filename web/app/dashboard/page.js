@@ -1,11 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
 export default function DashboardPage() {
   const router = useRouter()
+const searchParams = useSearchParams()
+const isGuest = searchParams.get('guest') === 'true'
+const guestBranch = searchParams.get('branch') || ''
+const guestSepType = searchParams.get('separation_type') || ''
+
   const [profile, setProfile] = useState(null)
   const [progress, setProgress] = useState(0)
   const [daysRemaining, setDaysRemaining] = useState(null)
@@ -13,6 +18,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   const loadProfile = useCallback(async () => {
+    // Check URL params directly to avoid timing issues
+    const params = new URLSearchParams(window.location.search)
+    const guestMode = params.get('guest') === 'true'
+    const branch = params.get('branch') || ''
+    const sepType = params.get('separation_type') || ''
+
+    if (guestMode) {
+      setProfile({ full_name: 'Guest', branch, separation_type: sepType })
+      setLoading(false)
+      return
+    }
+
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) {
       router.push('/login')
@@ -42,10 +59,7 @@ export default function DashboardPage() {
       setTotalDays(total)
     }
 
-    const userBranch = profileData.branch
-    const userSepType = profileData.separation_type
-
-const { data: allItems } = await supabase
+    const { data: allItems } = await supabase
       .from('checklist_items')
       .select('id')
 
@@ -65,7 +79,6 @@ const { data: allItems } = await supabase
       .eq('user_id', session.user.id)
       .eq('completed', true)
 
-    // Build maps for hidden and completed
     const hiddenMap = {}
     const completedMap = {}
     allProgress?.forEach(p => {
@@ -73,7 +86,6 @@ const { data: allItems } = await supabase
       completedMap[p.checklist_item_id] = p.completed
     })
 
-    // Count only items that are not (hidden AND uncompleted)
     const activeItems = allItems?.filter(item => {
       const isHidden = hiddenMap[item.id]
       const isCompleted = completedMap[item.id]
@@ -84,13 +96,6 @@ const { data: allItems } = await supabase
     const completedChecklistCount = activeItems.filter(item => completedMap[item.id]).length
     const totalCount = activeItems.length + (customItems?.length || 0)
     const completedCount = completedChecklistCount + (completedCustom?.length || 0)
-
-
-
-
-
-
-    console.log('total:', totalCount, 'completed:', completedCount)
 
     if (totalCount > 0) {
       const pct = Math.round((completedCount / totalCount) * 100)
@@ -103,15 +108,29 @@ const { data: allItems } = await supabase
     loadProfile()
   }, [loadProfile])
 
+  const params = new URLSearchParams(window.location.search)
+  console.log('URL params:', window.location.search)
+  console.log('guest mode:', params.get('guest'))
+
   useEffect(() => {
+    if (isGuest) return
     const handleFocus = () => loadProfile()
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
-  }, [loadProfile])
+  }, [loadProfile, isGuest])
 
   const timeProgress = totalDays && daysRemaining
     ? Math.max(0, Math.round(((totalDays - daysRemaining) / totalDays) * 100))
     : 0
+
+  const guestNav = (path) => {
+    if (path === '/settings') {
+      alert('Sign in to access settings.')
+      return
+    }
+    const sep = path.includes('?') ? '&' : '?'
+    router.push(`${path}${sep}guest=true&branch=${encodeURIComponent(guestBranch)}&separation_type=${encodeURIComponent(guestSepType)}`)
+  }
 
   if (loading) return (
     <div style={{
@@ -132,8 +151,43 @@ const { data: allItems } = await supabase
       fontFamily: 'sans-serif',
       padding: '2rem'
     }}>
-{/* Less than 1 year warning */}
-      {daysRemaining !== null && daysRemaining <= 365 && daysRemaining > 0 && (
+
+      {/* Guest banner */}
+      {isGuest && (
+        <div style={{
+          backgroundColor: '#2563eb11',
+          border: '1px solid #2563eb',
+          borderRadius: '12px',
+          padding: '1rem 1.25rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.75rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>👋</span>
+            <div>
+              <p style={{ margin: 0, fontWeight: '500', color: '#2563eb' }}>You're browsing as a guest</p>
+              <p style={{ margin: 0, color: '#8899aa', fontSize: '0.8rem' }}>Sign in to save your progress, favorites, and checklist.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/login')}
+            style={{
+              background: '#2563eb', color: 'white', border: 'none',
+              borderRadius: '8px', padding: '8px 18px',
+              fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem'
+            }}
+          >
+            Sign In →
+          </button>
+        </div>
+      )}
+
+      {/* Less than 1 year warning — only for logged in users */}
+      {!isGuest && daysRemaining !== null && daysRemaining <= 365 && daysRemaining > 0 && (
         <div style={{
           backgroundColor: '#f59e0b11',
           border: '1px solid #f59e0b',
@@ -156,7 +210,7 @@ const { data: allItems } = await supabase
         </div>
       )}
 
-      {daysRemaining !== null && daysRemaining <= 0 && (
+      {!isGuest && daysRemaining !== null && daysRemaining <= 0 && (
         <div style={{
           backgroundColor: '#22c55e11',
           border: '1px solid #22c55e',
@@ -181,7 +235,7 @@ const { data: allItems } = await supabase
 
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem' }}>
-          Welcome back, {profile?.full_name?.split(' ')[0]} 👋
+          {isGuest ? 'Welcome, Guest 👋' : `Welcome back, ${profile?.full_name?.split(' ')[0]} 👋`}
         </h1>
         <p style={{ color: '#8899aa' }}>
           {profile?.branch} — {profile?.separation_type}
@@ -199,17 +253,15 @@ const { data: allItems } = await supabase
             Checklist Progress
           </p>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-            {progress}%
+            {isGuest ? '--' : `${progress}%`}
           </p>
           <div style={progressTrackStyle}>
-            <div style={{
-              ...progressBarStyle,
-              width: `${progress}%`,
-              backgroundColor: '#22c55e'
-            }} />
+            {!isGuest && (
+              <div style={{ ...progressBarStyle, width: `${progress}%`, backgroundColor: '#22c55e' }} />
+            )}
           </div>
           <p style={{ color: '#445566', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-            tasks completed
+            {isGuest ? 'Sign in to track progress' : 'tasks completed'}
           </p>
         </div>
 
@@ -218,17 +270,15 @@ const { data: allItems } = await supabase
             Time to Separation
           </p>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-            {daysRemaining !== null ? `${daysRemaining}d` : '--'}
+            {isGuest ? '--' : daysRemaining !== null ? `${daysRemaining}d` : '--'}
           </p>
           <div style={progressTrackStyle}>
-            <div style={{
-              ...progressBarStyle,
-              width: `${timeProgress}%`,
-              backgroundColor: '#2563eb'
-            }} />
+            {!isGuest && (
+              <div style={{ ...progressBarStyle, width: `${timeProgress}%`, backgroundColor: '#2563eb' }} />
+            )}
           </div>
           <p style={{ color: '#445566', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-            {timeProgress}% of timeline elapsed
+            {isGuest ? 'Sign in to see your timeline' : `${timeProgress}% of timeline elapsed`}
           </p>
         </div>
       </div>
@@ -248,10 +298,18 @@ const { data: allItems } = await supabase
         ].map(item => (
           <button
             key={item.path}
-            onClick={() => router.push(item.path)}
-            style={navButtonStyle}
+            onClick={() => isGuest ? guestNav(item.path) : router.push(item.path)}
+            style={{
+              ...navButtonStyle,
+              opacity: isGuest && item.path === '/settings' ? 0.4 : 1
+            }}
           >
             {item.label}
+            {isGuest && item.path === '/settings' && (
+              <span style={{ color: '#445566', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
+                Sign in required
+              </span>
+            )}
           </button>
         ))}
       </div>

@@ -40,7 +40,12 @@ export default function CertificationsPage() {
     loadData()
   }, [])
 
-  const toggleFavorite = async (certId) => {
+const toggleFavorite = async (certId) => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('guest') === 'true') {
+      alert('Sign in to save favorites!')
+      return
+    }
     if (!user) {
       alert('Please sign in to save favorites')
       return
@@ -93,10 +98,36 @@ export default function CertificationsPage() {
       fontFamily: 'sans-serif',
       padding: '2rem'
     }}>
+        {new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('guest') === 'true' && (
+  <div style={{
+    backgroundColor: '#2563eb11', border: '1px solid #2563eb',
+    borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem'
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <span>👋</span>
+      <div>
+        <p style={{ margin: 0, fontWeight: '500', color: '#2563eb' }}>Browsing as guest — read only</p>
+        <p style={{ margin: 0, color: '#8899aa', fontSize: '0.8rem' }}>Sign in to save favorites.</p>
+      </div>
+    </div>
+    <button onClick={() => router.push('/login')}
+      style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 18px', fontWeight: 600, cursor: 'pointer' }}>
+      Sign In →
+    </button>
+  </div>
+)}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button onClick={() => router.push('/dashboard')} style={backButtonStyle}>
-          ← Dashboard
-        </button>
+<button onClick={() => {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('guest') === 'true') {
+    router.push(`/dashboard?${params.toString()}`)
+  } else {
+    router.push('/dashboard')
+  }
+}} style={backButtonStyle}>
+  ← Dashboard
+</button>
         <h1 style={{ fontSize: '1.5rem' }}>Certifications</h1>
       </div>
 

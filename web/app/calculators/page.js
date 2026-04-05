@@ -233,8 +233,14 @@ if (used > 36) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0a1628', color: 'white', fontFamily: 'sans-serif', padding: '2rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button onClick={() => router.push('/dashboard')} style={backButtonStyle}>← Dashboard</button>
-        <h1 style={{ fontSize: '1.5rem' }}>Financial Calculators</h1>
+<button onClick={() => {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('guest') === 'true') {
+    router.push(`/dashboard?${params.toString()}`)
+  } else {
+    router.push('/dashboard')
+  }
+}} style={backButtonStyle}>← Dashboard</button>        <h1 style={{ fontSize: '1.5rem' }}>Financial Calculators</h1>
       </div>
 
       <p style={{ color: '#8899aa', fontSize: '0.85rem', marginBottom: '1.5rem' }}>

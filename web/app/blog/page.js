@@ -55,9 +55,16 @@ export default function BlogPage() {
       padding: '2rem'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button onClick={() => router.push('/dashboard')} style={backButtonStyle}>
-          ← Dashboard
-        </button>
+        <button onClick={() => {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('guest') === 'true') {
+    router.push(`/dashboard?${params.toString()}`)
+  } else {
+    router.push('/dashboard')
+  }
+}} style={backButtonStyle}>
+  ← Dashboard
+</button>
         <h1 style={{ fontSize: '1.5rem' }}>Blog & Interviews</h1>
       </div>
 
