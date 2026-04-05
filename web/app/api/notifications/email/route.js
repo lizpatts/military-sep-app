@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://military-sep-app.vercel.app'
 
 export async function POST(request) {
   try {
@@ -56,12 +57,12 @@ const email = profile.email
               <li>Review your TSP contributions</li>
               <li>Start researching SkillBridge opportunities</li>
             </ul>
-            <a href="https://military-sep-app.vercel.app/checklist" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
+            <a href="${APP_URL}/checklist" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
               Open My Checklist →
             </a>
             <p style="color:#445566;font-size:0.85rem;margin-top:2rem">
               You're receiving this because you enabled email reminders. 
-              <a href="https://military-sep-app.vercel.app/settings" style="color:#2563eb">Manage preferences</a>
+              <a href="${APP_URL}/settings" style="color:#2563eb">Manage preferences</a>
             </p>
           </div>
         `
@@ -81,11 +82,11 @@ const email = profile.email
               <li>Request letters of recommendation from your chain of command</li>
               <li>Get your vaccines boosted for free while still on active duty</li>
             </ul>
-            <a href="https://military-sep-app.vercel.app/checklist" style="display:inline-block;background:#f59e0b;color:#000;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
+            <a href="${APP_URL}/checklist" style="display:inline-block;background:#f59e0b;color:#000;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
               Open My Checklist →
             </a>
             <p style="color:#445566;font-size:0.85rem;margin-top:2rem">
-              <a href="https://military-sep-app.vercel.app/settings" style="color:#2563eb">Manage preferences</a>
+              <a href="${APP_URL}/settings" style="color:#2563eb">Manage preferences</a>
             </p>
           </div>
         `
@@ -105,11 +106,11 @@ const email = profile.email
               <li>Plan your terminal leave dates with your command</li>
               <li>Make sure your emergency savings fund is in place</li>
             </ul>
-            <a href="https://military-sep-app.vercel.app/checklist" style="display:inline-block;background:#ef4444;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
+            <a href="${APP_URL}/checklist" style="display:inline-block;background:#ef4444;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
               Open My Checklist →
             </a>
             <p style="color:#445566;font-size:0.85rem;margin-top:2rem">
-              <a href="https://military-sep-app.vercel.app/settings" style="color:#2563eb">Manage preferences</a>
+              <a href="${APP_URL}/settings" style="color:#2563eb">Manage preferences</a>
             </p>
           </div>
         `
@@ -128,11 +129,11 @@ const email = profile.email
               <li>Confirm your VA claim has been submitted</li>
               <li>Remember — you are still on active duty during terminal leave. Stay sharp.</li>
             </ul>
-            <a href="https://military-sep-app.vercel.app/checklist" style="display:inline-block;background:#22c55e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
+            <a href="${APP_URL}/checklist" style="display:inline-block;background:#22c55e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
               Open My Checklist →
             </a>
             <p style="color:#445566;font-size:0.85rem;margin-top:2rem">
-              <a href="https://military-sep-app.vercel.app/settings" style="color:#2563eb">Manage preferences</a>
+              <a href="${APP_URL}/settings" style="color:#2563eb">Manage preferences</a>
             </p>
           </div>
         `
@@ -145,11 +146,11 @@ const email = profile.email
             <p>Hey ${firstName},</p>
             <p>Your separation date of <strong>${sepDate}</strong> is this week.</p>
             <p>It's going to be a shock at first — that's completely normal. The structure, the community, the sense of mission — those don't disappear overnight. Give yourself grace.</p>
-            <p>Read this before you go: <a href="https://military-sep-app.vercel.app/blog" style="color:#2563eb">What to expect in your first week as a civilian</a></p>
+            <p>Read this before you go: <a href="${APP_URL}/blog" style="color:#2563eb">What to expect in your first week as a civilian</a></p>
             <p style="color:#f59e0b">You served. You sacrificed. Now it's your turn.</p>
             <p>Congratulations, ${firstName}. We've got you from here.</p>
             <p style="color:#445566;font-size:0.85rem;margin-top:2rem">
-              <a href="https://military-sep-app.vercel.app/settings" style="color:#2563eb">Manage preferences</a>
+              <a href="${APP_URL}/settings" style="color:#2563eb">Manage preferences</a>
             </p>
           </div>
         `
@@ -163,11 +164,11 @@ const email = profile.email
             <p>It's been about 3 months since your separation. How are you doing?</p>
             <p>The first 90 days are often the hardest. If you're struggling with the transition, that's normal and it does get better.</p>
             <p>We'd love to hear your story. Would you consider writing a short blog post about your transition experience? It could help thousands of service members who are where you were 3 months ago.</p>
-            <a href="https://military-sep-app.vercel.app/blog" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
+            <a href="${APP_URL}/blog" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
               Share Your Story →
             </a>
             <p style="color:#445566;font-size:0.85rem;margin-top:2rem">
-              <a href="https://military-sep-app.vercel.app/settings" style="color:#2563eb">Manage preferences</a>
+              <a href="${APP_URL}/settings" style="color:#2563eb">Manage preferences</a>
             </p>
           </div>
         `
@@ -181,11 +182,11 @@ const email = profile.email
             <p>Six months into civilian life. You've made it through the hardest part.</p>
             <p>If you haven't already — get outside, find your community, and build your new routine. Struggles adjusting are completely normal at this stage.</p>
             <p>We'd love to hear how your transition has gone. Your story matters to the next service member coming behind you.</p>
-            <a href="https://military-sep-app.vercel.app/blog" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
+            <a href="${APP_URL}/blog" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:1rem">
               Share Your Story →
             </a>
             <p style="color:#445566;font-size:0.85rem;margin-top:2rem">
-              <a href="https://military-sep-app.vercel.app/settings" style="color:#2563eb">Manage preferences</a>
+              <a href="${APP_URL}/settings" style="color:#2563eb">Manage preferences</a>
             </p>
           </div>
         `

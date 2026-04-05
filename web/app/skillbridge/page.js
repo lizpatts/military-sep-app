@@ -17,6 +17,14 @@ export default function SkillBridgePage() {
   const [loading, setLoading] = useState(true)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState(null)
+  const [showSubmitForm, setShowSubmitForm] = useState(false)
+  const [submitLoading, setSubmitLoading] = useState(false)
+  const [submitMessage, setSubmitMessage] = useState(null)
+  const [form, setForm] = useState({
+    employer_name: '', industry: 'Technology', city: '', state: '',
+    latitude: '', longitude: '', duration_weeks: '12',
+    url: '', description: '', branches_eligible: 'all'
+  })
 
   const [filterBranch, setFilterBranch] = useState('All')
   const [filterIndustry, setFilterIndustry] = useState('All')
@@ -27,6 +35,7 @@ export default function SkillBridgePage() {
   const branches = ['All', 'Army', 'Navy', 'Marine Corps', 'Air Force', 'Space Force', 'Coast Guard']
   const industries = ['All', 'Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Government', 'Logistics', 'Education', 'Other']
   const durations = ['All', '0-90 days', '91-180 days']
+  const industryOptions = ['Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Government', 'Logistics', 'Education', 'Other']
 
   useEffect(() => {
     const loadData = async () => {
@@ -45,6 +54,7 @@ export default function SkillBridgePage() {
       const { data } = await supabase
         .from('skillbridge_locations')
         .select('*')
+        .in('status', ['approved', 'pending'])
         .order('employer_name')
 
       setLocations(data || [])
@@ -87,9 +97,9 @@ export default function SkillBridgePage() {
   const filteredLocations = locations.filter(loc => {
     if (showFavoritesOnly && !favorites[loc.id]) return false
     if (filterBranch !== 'All') {
-      const branches = loc.branches_eligible
-      if (!branches) return false
-      if (branches !== 'all' && !branches.includes(filterBranch)) return false
+      const b = loc.branches_eligible
+      if (!b) return false
+      if (b !== 'all' && !b.includes(filterBranch)) return false
     }
     if (filterIndustry !== 'All' && loc.industry !== filterIndustry) return false
     if (filterDuration !== 'All') {
@@ -102,26 +112,37 @@ export default function SkillBridgePage() {
     return true
   })
 
+  const getMarkerColor = (loc) => {
+    if (loc.status === 'pending') return '#f59e0b'
+    if (favorites[loc.id]) return '#f59e0b'
+    return '#2563eb'
+  }
+
   const openInfoWindow = (loc, marker, favs) => {
     const isFav = favs[loc.id]
+    const isPending = loc.status === 'pending'
     infoWindowRef.current.setContent(`
       <div style="background:#0f2035;color:white;padding:12px;border-radius:8px;min-width:220px;font-family:sans-serif">
+        ${isPending ? `<div style="background:#f59e0b22;border:1px solid #f59e0b;color:#f59e0b;padding:4px 10px;border-radius:6px;font-size:11px;margin-bottom:8px">⏳ Pending Approval</div>` : ''}
         <strong style="font-size:14px">${loc.employer_name}</strong>
         <p style="color:#8899aa;margin:4px 0;font-size:12px">${loc.city}, ${loc.state}</p>
         ${loc.industry ? `<p style="color:#8899aa;margin:4px 0;font-size:12px">${loc.industry}</p>` : ''}
         ${loc.duration_weeks ? `<p style="color:#8899aa;margin:4px 0;font-size:12px">~${loc.duration_weeks} weeks</p>` : ''}
+        ${loc.description ? `<p style="color:#8899aa;margin:4px 0;font-size:12px;font-style:italic">"${loc.description}"</p>` : ''}
         ${loc.url ? `<a href="${loc.url}" target="_blank" style="color:#2563eb;font-size:12px;display:block;margin-top:6px">View opportunity →</a>` : ''}
+        ${!isPending ? `
         <button 
           onclick="window.toggleFavFromMap('${loc.id}')"
           style="margin-top:8px;width:100%;padding:6px;border-radius:6px;border:1px solid ${isFav ? '#f59e0b' : '#1e3a5f'};background:${isFav ? '#f59e0b22' : 'transparent'};color:${isFav ? '#f59e0b' : '#8899aa'};cursor:pointer;font-size:12px"
         >
           ${isFav ? '★ Favorited' : '☆ Save to Favorites'}
-        </button>
+        </button>` : ''}
       </div>
     `)
     infoWindowRef.current.open(mapInstance.current, marker)
   }
-useEffect(() => {
+
+  useEffect(() => {
     window.toggleFavFromMap = async (locId) => {
       if (!user) { alert('Please sign in to save favorites'); return }
       const isFav = favorites[locId]
@@ -148,9 +169,7 @@ useEffect(() => {
       }
 
       const loc = locations.find(l => l.id === locId)
-      if (loc && marker) {
-        openInfoWindow(loc, marker, newFavs)
-      }
+      if (loc && marker) openInfoWindow(loc, marker, newFavs)
     }
   }, [favorites, locations, user])
 
@@ -162,19 +181,20 @@ useEffect(() => {
 
     filteredLocations.forEach(loc => {
       if (!loc.latitude || !loc.longitude) return
+      const color = getMarkerColor(loc)
+      const isPending = loc.status === 'pending'
 
-      const isFav = favorites[loc.id]
       const marker = new window.google.maps.Marker({
         position: { lat: loc.latitude, lng: loc.longitude },
         map: mapInstance.current,
         title: loc.employer_name,
         icon: {
           path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: isFav ? '#f59e0b' : '#2563eb',
-          fillOpacity: 1,
-          strokeColor: isFav ? '#f59e0b' : '#2563eb',
-          strokeWeight: 2
+          scale: isPending ? 7 : 8,
+          fillColor: color,
+          fillOpacity: isPending ? 0.5 : 1,
+          strokeColor: color,
+          strokeWeight: isPending ? 1 : 2
         }
       })
 
@@ -182,7 +202,6 @@ useEffect(() => {
         setSelectedLocation(loc)
         openInfoWindow(loc, marker, favorites)
       })
-
       marker.addListener('mouseover', () => {
         openInfoWindow(loc, marker, favorites)
       })
@@ -204,7 +223,6 @@ useEffect(() => {
       await supabase.from('skillbridge_favorites').insert({ user_id: user.id, location_id: locId })
     }
 
-    // Update marker color
     const marker = markersRef.current[locId]
     if (marker) {
       marker.setIcon({
@@ -227,15 +245,150 @@ useEffect(() => {
     if (marker) openInfoWindow(loc, marker, favorites)
   }
 
+  const handleSubmit = async () => {
+    if (!user) { alert('Please sign in to submit a location'); return }
+    if (!form.employer_name || !form.city || !form.state || !form.latitude || !form.longitude) {
+      setSubmitMessage({ type: 'error', text: 'Please fill in all required fields including coordinates.' })
+      return
+    }
+    setSubmitLoading(true)
+    setSubmitMessage(null)
+
+    const res = await fetch('/api/skillbridge/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form)
+    })
+    const json = await res.json()
+
+    if (json.success) {
+      setSubmitMessage({ type: 'success', text: '✅ Submitted! Your location will show as pending until approved.' })
+      setLocations(prev => [...prev, json.data])
+      setForm({
+        employer_name: '', industry: 'Technology', city: '', state: '',
+        latitude: '', longitude: '', duration_weeks: '12',
+        url: '', description: '', branches_eligible: 'all'
+      })
+      setTimeout(() => setShowSubmitForm(false), 2000)
+    } else {
+      setSubmitMessage({ type: 'error', text: json.error || 'Something went wrong.' })
+    }
+    setSubmitLoading(false)
+  }
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0a1628', color: 'white', fontFamily: 'sans-serif' }}>
+
+      {/* Submit Form Modal */}
+      {showSubmitForm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#0f2035', border: '1px solid #1e3a5f',
+            borderRadius: '12px', padding: '2rem', width: '100%', maxWidth: '520px',
+            maxHeight: '90vh', overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: 0, color: 'white' }}>Submit a SkillBridge Location</h2>
+              <button onClick={() => setShowSubmitForm(false)}
+                style={{ background: 'none', border: 'none', color: '#8899aa', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+            </div>
+
+            <p style={{ color: '#8899aa', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+              Know of a SkillBridge opportunity not on the map? Submit it here. It will show as ⏳ pending until approved.
+            </p>
+
+            {submitMessage && (
+              <div style={{
+                background: submitMessage.type === 'success' ? '#14532d' : '#450a0a',
+                border: `1px solid ${submitMessage.type === 'success' ? '#22c55e' : '#ef4444'}`,
+                color: submitMessage.type === 'success' ? '#22c55e' : '#ef4444',
+                padding: '10px 14px', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem'
+              }}>
+                {submitMessage.text}
+              </div>
+            )}
+
+            {[
+              { label: 'Employer Name *', key: 'employer_name', placeholder: 'e.g. Raytheon Technologies' },
+              { label: 'City *', key: 'city', placeholder: 'e.g. San Diego' },
+              { label: 'State *', key: 'state', placeholder: 'e.g. CA' },
+              { label: 'Latitude *', key: 'latitude', placeholder: 'e.g. 32.7157' },
+              { label: 'Longitude *', key: 'longitude', placeholder: 'e.g. -117.1611' },
+              { label: 'Program URL', key: 'url', placeholder: 'https://...' },
+              { label: 'Description', key: 'description', placeholder: 'Brief description of the opportunity...' },
+            ].map(field => (
+              <div key={field.key} style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', color: '#8899aa', fontSize: '0.8rem', marginBottom: '4px' }}>
+                  {field.label}
+                </label>
+                <input
+                  value={form[field.key]}
+                  onChange={e => setForm(prev => ({ ...prev, [field.key]: e.target.value }))}
+                  placeholder={field.placeholder}
+                  style={{ ...inputStyle, marginBottom: 0 }}
+                />
+              </div>
+            ))}
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', color: '#8899aa', fontSize: '0.8rem', marginBottom: '4px' }}>Industry</label>
+              <select value={form.industry} onChange={e => setForm(prev => ({ ...prev, industry: e.target.value }))} style={{ ...selectStyle, width: '100%' }}>
+                {industryOptions.map(i => <option key={i} value={i}>{i}</option>)}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', color: '#8899aa', fontSize: '0.8rem', marginBottom: '4px' }}>Duration (weeks)</label>
+              <input
+                type="number"
+                value={form.duration_weeks}
+                onChange={e => setForm(prev => ({ ...prev, duration_weeks: e.target.value }))}
+                style={{ ...inputStyle, marginBottom: 0 }}
+              />
+            </div>
+
+            <p style={{ color: '#445566', fontSize: '0.75rem', marginBottom: '1.5rem' }}>
+              💡 To find coordinates: go to <a href="https://maps.google.com" target="_blank" style={{ color: '#2563eb' }}>Google Maps</a>, right-click the location, and copy the numbers shown.
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button onClick={() => setShowSubmitForm(false)}
+                style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #1e3a5f', background: 'transparent', color: '#8899aa', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={handleSubmit} disabled={submitLoading}
+                style={{ flex: 2, padding: '12px', borderRadius: '8px', border: 'none', background: '#2563eb', color: 'white', fontWeight: 600, cursor: 'pointer', opacity: submitLoading ? 0.6 : 1 }}>
+                {submitLoading ? 'Submitting...' : 'Submit Location'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #1e3a5f' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
           <button onClick={() => router.push('/dashboard')} style={backButtonStyle}>← Dashboard</button>
-          <h1 style={{ fontSize: '1.5rem' }}>SkillBridge Map</h1>
+          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>SkillBridge Map</h1>
           <span style={{ color: '#445566', fontSize: '0.85rem', marginLeft: 'auto' }}>
             {filteredLocations.length} location{filteredLocations.length !== 1 ? 's' : ''}
           </span>
+          {user && (
+            <button onClick={() => { setShowSubmitForm(true); setSubmitMessage(null) }}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #2563eb', background: '#2563eb22', color: '#2563eb', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>
+              + Submit Location
+            </button>
+          )}
+          {user?.email === 'lizkaypatterson@gmail.com' && (
+            <button onClick={() => router.push('/admin/skillbridge')}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #22c55e', background: '#22c55e22', color: '#22c55e', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>
+              🛡️ Admin
+            </button>
+          )}
         </div>
 
         <input
@@ -258,14 +411,11 @@ useEffect(() => {
           <button
             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
             style={{
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: '1px solid',
+              padding: '8px 14px', borderRadius: '8px', border: '1px solid',
               borderColor: showFavoritesOnly ? '#f59e0b' : '#1e3a5f',
               backgroundColor: showFavoritesOnly ? '#f59e0b22' : 'transparent',
               color: showFavoritesOnly ? '#f59e0b' : '#8899aa',
-              fontSize: '0.85rem',
-              cursor: 'pointer'
+              fontSize: '0.85rem', cursor: 'pointer'
             }}
           >
             ★ Favorites only
@@ -300,7 +450,8 @@ useEffect(() => {
                   padding: '1rem 1.25rem',
                   borderBottom: '1px solid #1e3a5f',
                   cursor: 'pointer',
-                  backgroundColor: selectedLocation?.id === loc.id ? '#0f2035' : 'transparent'
+                  backgroundColor: selectedLocation?.id === loc.id ? '#0f2035' : 'transparent',
+                  borderLeft: loc.status === 'pending' ? '3px solid #f59e0b' : '3px solid transparent'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -311,50 +462,29 @@ useEffect(() => {
                     <p style={{ margin: '0 0 4px', color: '#8899aa', fontSize: '0.8rem' }}>
                       {loc.city}, {loc.state}
                     </p>
-                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '6px' }}>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '6px' }}>
                       {loc.industry && <span style={tagStyle('#2563eb')}>{loc.industry}</span>}
                       {loc.duration_weeks && <span style={tagStyle('#0891b2')}>~{loc.duration_weeks}wks</span>}
-                      {loc.is_community_submitted && <span style={tagStyle('#22c55e')}>Community</span>}
+                      {loc.status === 'pending' && <span style={tagStyle('#f59e0b')}>⏳ Pending</span>}
+                      {loc.is_community_submitted && loc.status === 'approved' && <span style={tagStyle('#22c55e')}>Community</span>}
                     </div>
                   </div>
-                  <button
-                    onClick={e => { e.stopPropagation(); toggleFavorite(loc.id) }}
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      color: favorites[loc.id] ? '#f59e0b' : '#445566',
-                      fontSize: '1.2rem',
-                      cursor: 'pointer',
-                      padding: '4px'
-                    }}
-                  >
-                    {favorites[loc.id] ? '★' : '☆'}
-                  </button>
+                  {loc.status !== 'pending' && (
+                    <button
+                      onClick={e => { e.stopPropagation(); toggleFavorite(loc.id) }}
+                      style={{ backgroundColor: 'transparent', border: 'none', color: favorites[loc.id] ? '#f59e0b' : '#445566', fontSize: '1.2rem', cursor: 'pointer', padding: '4px' }}
+                    >
+                      {favorites[loc.id] ? '★' : '☆'}
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '8px', flexWrap: 'wrap' }}>
                   {loc.url && (
-                    <div
-                      onClick={e => { e.stopPropagation(); window.open(loc.url, '_blank') }}
-                      style={{ color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer' }}
-                    >
+                    <div onClick={e => { e.stopPropagation(); window.open(loc.url, '_blank') }}
+                      style={{ color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer' }}>
                       View opportunity →
                     </div>
                   )}
-                  <div
-                    onClick={e => {
-                      e.stopPropagation()
-                      const text = `SkillBridge Opportunity: ${loc.employer_name} in ${loc.city}, ${loc.state}${loc.duration_weeks ? ` (~${loc.duration_weeks} weeks)` : ''}${loc.url ? `\n${loc.url}` : ''}`
-                      if (navigator.share) {
-                        navigator.share({ title: loc.employer_name, text, url: loc.url || window.location.href })
-                      } else {
-                        navigator.clipboard.writeText(text)
-                        alert('Copied to clipboard!')
-                      }
-                    }}
-                    style={{ color: '#8899aa', fontSize: '0.8rem', cursor: 'pointer' }}
-                  >
-                    Share →
-                  </div>
                 </div>
               </div>
             ))
@@ -366,41 +496,23 @@ useEffect(() => {
 }
 
 const tagStyle = (color) => ({
-  fontSize: '0.7rem',
-  padding: '2px 8px',
-  borderRadius: '10px',
-  backgroundColor: color + '22',
-  border: `1px solid ${color}`,
-  color: color
+  fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px',
+  backgroundColor: color + '22', border: `1px solid ${color}`, color: color
 })
 
 const backButtonStyle = {
-  backgroundColor: 'transparent',
-  color: '#8899aa',
-  border: '1px solid #1e3a5f',
-  padding: '8px 16px',
-  borderRadius: '8px',
-  fontSize: '0.85rem',
-  cursor: 'pointer'
+  backgroundColor: 'transparent', color: '#8899aa',
+  border: '1px solid #1e3a5f', padding: '8px 16px',
+  borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer'
 }
 
 const inputStyle = {
-  width: '100%',
-  padding: '10px 12px',
-  borderRadius: '8px',
-  border: '1px solid #1e3a5f',
-  backgroundColor: '#0f2035',
-  color: 'white',
-  fontSize: '0.95rem',
-  boxSizing: 'border-box'
+  width: '100%', padding: '10px 12px', borderRadius: '8px',
+  border: '1px solid #1e3a5f', backgroundColor: '#0f2035',
+  color: 'white', fontSize: '0.95rem', boxSizing: 'border-box'
 }
 
 const selectStyle = {
-  padding: '8px 12px',
-  borderRadius: '8px',
-  border: '1px solid #1e3a5f',
-  backgroundColor: '#0f2035',
-  color: 'white',
-  fontSize: '0.85rem',
-  cursor: 'pointer'
+  padding: '8px 12px', borderRadius: '8px', border: '1px solid #1e3a5f',
+  backgroundColor: '#0f2035', color: 'white', fontSize: '0.85rem', cursor: 'pointer'
 }
