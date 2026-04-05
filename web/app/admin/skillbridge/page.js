@@ -238,7 +238,8 @@ async function handleEdit(id) {
                       {s.status === 'pending' ? '⏳' : s.status === 'approved' ? '✅' : '❌'} {s.status.toUpperCase()}
                     </span>
                     <span style={{ color: '#445566', fontSize: '0.75rem' }}>{new Date(s.created_at).toLocaleDateString()}</span>
-                    {s.is_community_submitted && <span style={{ color: '#445566', fontSize: '0.75rem' }}>· Community</span>}
+                   {s.is_community_submitted && <span style={{ color: '#445566', fontSize: '0.75rem' }}>· Community</span>}
+                   {s.submitted_by_branch && <span style={{ background: '#2563eb22', color: '#2563eb', padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem' }}>⚔️ {s.submitted_by_branch}</span>}
                   </div>
                   <h2 style={{ color: 'white', margin: '0 0 4px 0', fontSize: '1.1rem' }}>{s.employer_name}</h2>
                   <p style={{ color: '#8899aa', margin: '0 0 4px 0', fontSize: '0.9rem' }}>

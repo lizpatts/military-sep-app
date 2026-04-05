@@ -20,10 +20,11 @@ export default function SkillBridgePage() {
   const [showSubmitForm, setShowSubmitForm] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitMessage, setSubmitMessage] = useState(null)
-  const [form, setForm] = useState({
-    employer_name: '', industry: 'Technology', city: '', state: '', duration_weeks: '12',
-    url: '', description: '', branches_eligible: 'all'
-  })
+const [form, setForm] = useState({
+  employer_name: '', industry: 'Technology', city: '', state: '',
+  duration_weeks: '12', url: '', description: '', notes: '',
+  branches_eligible: 'all', submitted_by_branch: ''
+})
 
   const [filterBranch, setFilterBranch] = useState('All')
   const [filterIndustry, setFilterIndustry] = useState('All')
@@ -318,6 +319,7 @@ export default function SkillBridgePage() {
               { label: 'State *', key: 'state', placeholder: 'e.g. CA' },
               { label: 'Program URL', key: 'url', placeholder: 'https://...' },
               { label: 'Description', key: 'description', placeholder: 'Brief description of the opportunity...' },
+              { label: 'Your Branch', key: 'submitted_by_branch', placeholder: 'e.g. Army, Navy, Air Force...' },
               { label: 'Anything else other military members should know?', key: 'notes', placeholder: 'e.g. Security clearance preferred, remote-friendly, great for 68Ws...' },
             ].map(field => (
               <div key={field.key} style={{ marginBottom: '1rem' }}>
