@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '../../lib/supabase'
 
 const LinkTile = ({ label, url }) => (
   <div
@@ -621,19 +622,20 @@ function VADisabilityCalculator() {
   const [showScenarios, setShowScenarios] = useState(false)
   const [saveMessage, setSaveMessage] = useState(null)
 
-  useEffect(() => {
+useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { supabase: sb } = await import('../../lib/supabase')
+      const { data: { session } } = await sb.auth.getSession()
       if (session?.user) {
         setUser(session.user)
-        loadScenarios(session.user.id)
+        loadScenarios(session.user.id, sb)
       }
     }
     init()
   }, [])
-
-  async function loadScenarios(userId) {
-    const { data } = await supabase
+async function loadScenarios(userId, sb) {
+    const sbClient = sb || supabase
+    const { data } = await sbClient
       .from('va_disability_scenarios')
       .select('*')
       .eq('user_id', userId)
@@ -641,13 +643,14 @@ function VADisabilityCalculator() {
     setScenarios(data || [])
   }
 
-  async function saveScenario() {
+async function saveScenario() {
     if (!user) { alert('Sign in to save scenarios.'); return }
     if (!result) { alert('Calculate a result first.'); return }
     if (!scenarioName.trim()) { alert('Please name this scenario.'); return }
     setSaveLoading(true)
     setSaveMessage(null)
-    const { error } = await supabase
+    const { supabase: sb } = await import('../../lib/supabase')
+    const { error } = await sb
       .from('va_disability_scenarios')
       .insert({
         user_id: user.id,
@@ -661,14 +664,16 @@ function VADisabilityCalculator() {
     } else {
       setSaveMessage({ type: 'success', text: `"${scenarioName}" saved!` })
       setScenarioName('')
-      loadScenarios(user.id)
+      const { supabase: sb2 } = await import('../../lib/supabase')
+      loadScenarios(user.id, sb2)
     }
     setSaveLoading(false)
   }
 
-  async function deleteScenario(id) {
+async function deleteScenario(id) {
     if (!confirm('Delete this scenario?')) return
-    await supabase.from('va_disability_scenarios').delete().eq('id', id)
+    const { supabase: sb } = await import('../../lib/supabase')
+    await sb.from('va_disability_scenarios').delete().eq('id', id)
     setScenarios(prev => prev.filter(s => s.id !== id))
   }
 
