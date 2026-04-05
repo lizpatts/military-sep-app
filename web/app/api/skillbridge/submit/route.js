@@ -1,19 +1,22 @@
-import { createClient } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+
 
 export async function POST(request) {
   const cookieStore = cookies()
-  
-  const supabase = createClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
-        get(name) { return cookieStore.get(name)?.value },
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options))
+        }
       },
     }
   )
-
   // Check user is logged in
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {

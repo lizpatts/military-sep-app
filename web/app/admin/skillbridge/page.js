@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 
 const ADMIN_EMAIL = 'lizkaypatterson@gmail.com'
 
@@ -19,7 +19,6 @@ export default function AdminSkillbridgePage() {
   }, [])
 
   async function checkAdminAndLoad() {
-    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.email !== ADMIN_EMAIL) {

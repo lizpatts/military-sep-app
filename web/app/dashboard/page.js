@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
-export default function DashboardPage() {
+function DashboardPage() {
   const router = useRouter()
 const searchParams = useSearchParams()
 const isGuest = searchParams.get('guest') === 'true'
@@ -347,4 +347,16 @@ const navButtonStyle = {
   fontSize: '1rem',
   cursor: 'pointer',
   textAlign: 'left'
+}
+
+export default function DashboardPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#0a1628', color: 'white', fontFamily: 'sans-serif' }}>
+        Loading...
+      </div>
+    }>
+      <DashboardPage />
+    </Suspense>
+  )
 }

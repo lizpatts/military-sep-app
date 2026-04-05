@@ -1,29 +1,41 @@
-import { createClient } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 const ADMIN_EMAIL = 'lizkaypatterson@gmail.com'
 
-export async function GET(request) {
-  const cookieStore = cookies()
-
-  const supabase = createClient(
+async function getSupabase() {
+  const cookieStore = await cookies()
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
-        get(name) { return cookieStore.get(name)?.value },
-      },
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options))
+        }
+      }
     }
   )
+}
 
-  // Check admin
+function getAdminSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  )
+}
+
+export async function GET(request) {
+  const supabase = await getSupabase()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user || user.email !== ADMIN_EMAIL) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Get all pending submissions
-  const { data, error } = await supabase
+  const { data, error } = await getAdminSupabase()
     .from('skillbridge_locations')
     .select('*')
     .eq('status', 'pending')
@@ -34,19 +46,7 @@ export async function GET(request) {
 }
 
 export async function PATCH(request) {
-  const cookieStore = cookies()
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get(name) { return cookieStore.get(name)?.value },
-      },
-    }
-  )
-
-  // Check admin
+  const supabase = await getSupabase()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user || user.email !== ADMIN_EMAIL) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -57,18 +57,7 @@ export async function PATCH(request) {
     return Response.json({ error: 'Invalid request' }, { status: 400 })
   }
 
-  // Use service key for admin updates
-  const adminSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY,
-    {
-      cookies: {
-        get() { return null },
-      },
-    }
-  )
-
-  const { error } = await adminSupabase
+  const { error } = await getAdminSupabase()
     .from('skillbridge_locations')
     .update({ status })
     .eq('id', id)
@@ -78,19 +67,7 @@ export async function PATCH(request) {
 }
 
 export async function DELETE(request) {
-  const cookieStore = cookies()
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get(name) { return cookieStore.get(name)?.value },
-      },
-    }
-  )
-
-  // Check admin
+  const supabase = await getSupabase()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user || user.email !== ADMIN_EMAIL) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -99,17 +76,7 @@ export async function DELETE(request) {
   const { id } = await request.json()
   if (!id) return Response.json({ error: 'Missing id' }, { status: 400 })
 
-  const adminSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY,
-    {
-      cookies: {
-        get() { return null },
-      },
-    }
-  )
-
-  const { error } = await adminSupabase
+  const { error } = await getAdminSupabase()
     .from('skillbridge_locations')
     .delete()
     .eq('id', id)
