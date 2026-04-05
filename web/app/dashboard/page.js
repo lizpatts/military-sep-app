@@ -108,9 +108,7 @@ const guestSepType = searchParams.get('separation_type') || ''
     loadProfile()
   }, [loadProfile])
 
-  const params = new URLSearchParams(window.location.search)
-  console.log('URL params:', window.location.search)
-  console.log('guest mode:', params.get('guest'))
+ const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
 
   useEffect(() => {
     if (isGuest) return

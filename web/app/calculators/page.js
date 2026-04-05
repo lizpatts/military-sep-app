@@ -621,14 +621,18 @@ function VADisabilityCalculator() {
   const [saveLoading, setSaveLoading] = useState(false)
   const [showScenarios, setShowScenarios] = useState(false)
   const [saveMessage, setSaveMessage] = useState(null)
-
 useEffect(() => {
     const init = async () => {
-      const { supabase: sb } = await import('../../lib/supabase')
-      const { data: { session } } = await sb.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
-        loadScenarios(session.user.id, sb)
+      try {
+        const mod = await import('../../lib/supabase')
+        const sb = mod.supabase || mod.default
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.user) {
+          setUser(session.user)
+          loadScenarios(session.user.id, sb)
+        }
+      } catch (e) {
+        console.log('Auth init error:', e)
       }
     }
     init()
