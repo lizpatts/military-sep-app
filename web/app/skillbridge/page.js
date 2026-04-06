@@ -18,6 +18,8 @@ export default function SkillBridgePage() {
   const [mapLoaded, setMapLoaded] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [showSubmitForm, setShowSubmitForm] = useState(false)
+  const [showDoDPanel, setShowDoDPanel] = useState(false)
+const [showCommunityOnly, setShowCommunityOnly] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitMessage, setSubmitMessage] = useState(null)
 const [form, setForm] = useState({
@@ -94,8 +96,9 @@ const [form, setForm] = useState({
     setMapLoaded(true)
   }
 
-  const filteredLocations = locations.filter(loc => {
+const filteredLocations = locations.filter(loc => {
     if (showFavoritesOnly && !favorites[loc.id]) return false
+    if (showCommunityOnly && !loc.is_community_submitted) return false
     if (filterBranch !== 'All') {
       const b = loc.branches_eligible
       if (!b) return false
@@ -368,6 +371,103 @@ const [form, setForm] = useState({
         </div>
       )}
 
+
+{/* DoD Official Banner */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1e3a5f, #0f2035)',
+        borderBottom: '1px solid #2563eb',
+        padding: '0.75rem 2rem',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '1.2rem' }}>🇺🇸</span>
+          <div>
+            <p style={{ margin: 0, color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>
+              8,000+ programs in the official DoD SkillBridge database
+            </p>
+            <p style={{ margin: 0, color: '#8899aa', fontSize: '0.75rem' }}>
+              Browse all approved programs on the official DoD site, then come back to see what veterans in your area recommend.
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => setShowDoDPanel(!showDoDPanel)}
+            style={{
+              background: showDoDPanel ? '#2563eb' : '#2563eb22',
+              color: '#2563eb', border: '1px solid #2563eb',
+              borderRadius: '8px', padding: '8px 16px',
+              cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+              ...(showDoDPanel && { color: 'white' })
+            }}
+          >
+            {showDoDPanel ? '✕ Close DoD Search' : '🔍 Search DoD Database'}
+          </button>
+          <button
+            onClick={() => window.open('https://skillbridge.osd.mil/programs.htm', '_blank')}
+            style={{
+              background: 'transparent', color: '#8899aa',
+              border: '1px solid #1e3a5f',
+              borderRadius: '8px', padding: '8px 16px',
+              cursor: 'pointer', fontSize: '0.85rem'
+            }}
+          >
+            Open in New Tab →
+          </button>
+        </div>
+      </div>
+
+      {/* DoD Embedded Panel */}
+{showDoDPanel && (
+        <div style={{ borderBottom: '1px solid #1e3a5f', background: '#0a1628', padding: '1.5rem 2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <p style={{ margin: 0, color: '#8899aa', fontSize: '0.85rem' }}>
+              🔍 Search the official DoD SkillBridge database
+            </p>
+            <button onClick={() => setShowDoDPanel(false)}
+              style={{ background: 'none', border: 'none', color: '#445566', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <input
+              id="dod-search"
+              placeholder="Search by employer, location, or industry..."
+              style={{ flex: 1, minWidth: '200px', padding: '10px 12px', borderRadius: '8px', border: '1px solid #1e3a5f', background: '#0f2035', color: 'white', fontSize: '0.95rem' }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  window.open(`https://skillbridge.osd.mil/programs.htm`, '_blank')
+                }
+              }}
+            />
+            <button
+              onClick={() => window.open('https://skillbridge.osd.mil/programs.htm', '_blank')}
+              style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', fontWeight: 600 }}>
+              Search on DoD Site →
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
+            {[
+              { label: '💻 Technology', query: 'technology' },
+              { label: '🏥 Healthcare', query: 'healthcare' },
+              { label: '💰 Finance', query: 'finance' },
+              { label: '🏭 Manufacturing', query: 'manufacturing' },
+              { label: '🏛️ Government', query: 'government' },
+              { label: '🚛 Logistics', query: 'logistics' },
+            ].map(cat => (
+              <button key={cat.query}
+                onClick={() => window.open('https://skillbridge.osd.mil/programs.htm', '_blank')}
+                style={{ padding: '0.75rem', background: '#0f2035', border: '1px solid #1e3a5f', borderRadius: '8px', color: 'white', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}>
+                {cat.label}
+                <span style={{ display: 'block', color: '#445566', fontSize: '0.75rem', marginTop: '4px' }}>Browse on DoD site →</span>
+              </button>
+            ))}
+          </div>
+          <p style={{ color: '#445566', fontSize: '0.75rem', marginTop: '1rem' }}>
+            ⚠️ The DoD site blocks direct embedding for security reasons. All searches open in a new tab.
+          </p>
+        </div>
+      )}
+
+
       <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #1e3a5f' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
           <button onClick={() => {
@@ -424,6 +524,18 @@ const [form, setForm] = useState({
             }}
           >
             ★ Favorites only
+          </button>
+          <button
+            onClick={() => setShowCommunityOnly(!showCommunityOnly)}
+            style={{
+              padding: '8px 14px', borderRadius: '8px', border: '1px solid',
+              borderColor: showCommunityOnly ? '#22c55e' : '#1e3a5f',
+              backgroundColor: showCommunityOnly ? '#22c55e22' : 'transparent',
+              color: showCommunityOnly ? '#22c55e' : '#8899aa',
+              fontSize: '0.85rem', cursor: 'pointer'
+            }}
+          >
+            👥 Community only
           </button>
         </div>
       </div>
