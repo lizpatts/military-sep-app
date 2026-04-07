@@ -56,7 +56,7 @@ const giBillLinks = [
     { label: 'Check Your GI Bill Balance', url: 'https://www.va.gov/education/gi-bill/post-9-11/ch-33-benefit/' },
     { label: 'BAH Rate Calculator', url: 'https://www.travel.dod.mil/Allowances/Basic-Allowance-for-Housing/BAH-Rate-Lookup/' },
   ]
-  
+
   useEffect(() => {
     if (tspResult && chartRef.current) {
       if (chartInstance.current) chartInstance.current.destroy()
@@ -524,9 +524,9 @@ function VADisabilityCalculator() {
     100: { alone: 3737.85, spouse: 3946.25, spouseAA: 4154.65 }
   }
 
-  const addRating = () => setRatings(prev => [...prev, { id: Date.now(), rating: '', name: '' }])
-  const removeRating = (id) => { if (ratings.length > 1) setRatings(prev => prev.filter(r => r.id !== id)) }
-  const updateRating = (id, field, value) => setRatings(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r))
+  const addRating = () => { setRatings(prev => [...prev, { id: Date.now(), rating: '', name: '' }]); setResult(null) }
+  const removeRating = (id) => { if (ratings.length > 1) { setRatings(prev => prev.filter(r => r.id !== id)); setResult(null) } }
+  const updateRating = (id, field, value) => { setRatings(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r)); setResult(null) }
 
   const calculateCombinedRating = (ratingsList) => {
     const sorted = [...ratingsList].sort((a, b) => b - a)
@@ -538,6 +538,7 @@ function VADisabilityCalculator() {
   const roundToNearest10 = (val) => Math.round(val / 10) * 10
 
   const calculate = () => {
+    setResult(null)
     const validRatings = ratings.filter(r => !isNaN(parseFloat(r.rating)) && parseFloat(r.rating) > 0)
     if (validRatings.length === 0) { alert('Please enter at least one disability rating.'); return }
     const numericRatings = validRatings.map(r => parseFloat(r.rating))

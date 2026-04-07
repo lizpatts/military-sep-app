@@ -323,7 +323,9 @@ const completedChecklist = activeItems.filter(item => completedMap[item.id]).len
           <div style={{ display: 'grid', gridTemplateColumns: vaScenario ? '1fr 1fr 1fr' : '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
 
             {/* Checklist progress — always green */}
-            <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div onClick={() => !isGuest && router.push('/checklist')} style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
+              onMouseEnter={e => { if (!isGuest) e.currentTarget.style.borderColor = '#22c55e' }}
+              onMouseLeave={e => { if (!isGuest) e.currentTarget.style.borderColor = '#e5e7eb' }}>
               <p style={{ color: '#6b7280', fontSize: '11px', fontWeight: '600', letterSpacing: '0.6px', textTransform: 'uppercase', margin: '0 0 8px' }}>Checklist Progress</p>
               <p style={{ fontSize: '28px', fontWeight: '700', color: '#22c55e', margin: '0 0 4px', letterSpacing: '-1px' }}>{isGuest ? '--' : `${progress}%`}</p>
               {!isGuest && (
@@ -338,7 +340,9 @@ const completedChecklist = activeItems.filter(item => completedMap[item.id]).len
             </div>
 
             {/* Tasks completed — orange/red accents */}
-            <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div onClick={() => !isGuest && router.push('/checklist')} style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
+              onMouseEnter={e => { if (!isGuest) e.currentTarget.style.borderColor = '#f59e0b' }}
+              onMouseLeave={e => { if (!isGuest) e.currentTarget.style.borderColor = '#e5e7eb' }}>
               <p style={{ color: '#6b7280', fontSize: '11px', fontWeight: '600', letterSpacing: '0.6px', textTransform: 'uppercase', margin: '0 0 8px' }}>Tasks Completed</p>
               <p style={{ fontSize: '28px', fontWeight: '700', color: '#111', margin: '0 0 4px', letterSpacing: '-1px' }}>
                 {isGuest ? '--' : `${completedCount}`}<span style={{ fontSize: '14px', color: '#9ca3af' }}>{isGuest ? '' : `/${totalCount}`}</span>
@@ -415,10 +419,9 @@ const completedChecklist = activeItems.filter(item => completedMap[item.id]).len
                 {deadlines.map((item, i) => {
                   const s = getPriorityStyle(item.priority, item.dueInDays)
                   return (
-                    <div key={item.id}
+<div key={item.id}
                       onClick={() => router.push('/checklist')}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', backgroundColor: s.bg, borderBottom: i < deadlines.length - 1 ? '1px solid #e5e7eb' : 'none', cursor: 'pointer', borderLeft: `4px solid ${s.border}` }}>
-                      <div style={{ flex: 1 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', backgroundColor: '#fff', borderBottom: i < deadlines.length - 1 ? '1px solid #e5e7eb' : 'none', cursor: 'pointer', borderLeft: `4px solid ${s.border}` }}>                      <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                           <span style={{ backgroundColor: s.labelBg, color: s.labelColor, fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', border: `1px solid ${s.border}` }}>{s.label}</span>
                           {item.category && <span style={{ color: '#9ca3af', fontSize: '11px' }}>{item.category}</span>}
