@@ -321,7 +321,7 @@ export default function SkillBridgePage() {
               <button onClick={() => setShowDoDPanel(!showDoDPanel)} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #2563eb', background: showDoDPanel ? '#2563eb' : '#eff6ff', color: showDoDPanel ? '#fff' : '#2563eb', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
                 {showDoDPanel ? '✕ Close' : '🔍 Search DoD'}
               </button>
-              <button onClick={() => window.open('https://skillbridge.osd.mil/programs.htm', '_blank')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#6b7280', cursor: 'pointer', fontSize: '12px' }}>
+              <button onClick={() => window.open('https://skillbridge.osd.mil/locations.htm', '_blank')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#6b7280', cursor: 'pointer', fontSize: '12px' }}>
                 Open in New Tab →
               </button>
             </div>
@@ -331,13 +331,13 @@ export default function SkillBridgePage() {
           {showDoDPanel && (
             <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '14px', marginBottom: '12px' }}>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                <input placeholder="Search by employer, location, or industry..." onKeyDown={e => e.key === 'Enter' && window.open('https://skillbridge.osd.mil/programs.htm', '_blank')}
+                <input placeholder="Search by employer, location, or industry..." onKeyDown={e => e.key === 'Enter' && window.open('https://skillbridge.osd.mil/locations.htm', '_blank')}
                   style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', backgroundColor: '#fff', color: '#111', fontSize: '13px' }} />
-                <button onClick={() => window.open('https://skillbridge.osd.mil/programs.htm', '_blank')} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Search →</button>
+                <button onClick={() => window.open('https://skillbridge.osd.mil/locations.htm', '_blank')} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Search →</button>
               </div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {[{ label: '💻 Tech' }, { label: '🏥 Healthcare' }, { label: '💰 Finance' }, { label: '🏭 Manufacturing' }, { label: '🏛️ Government' }, { label: '🚛 Logistics' }].map(cat => (
-                  <button key={cat.label} onClick={() => window.open('https://skillbridge.osd.mil/programs.htm', '_blank')}
+                  <button key={cat.label} onClick={() => window.open('https://skillbridge.osd.mil/locations.htm', '_blank')}
                     style={{ padding: '4px 12px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '20px', color: '#6b7280', cursor: 'pointer', fontSize: '12px' }}>
                     {cat.label}
                   </button>
@@ -351,7 +351,7 @@ export default function SkillBridgePage() {
             <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0 }}>SkillBridge Map</h1>
             <span style={{ color: '#9ca3af', fontSize: '13px' }}>
   {filteredLocations.length} location{filteredLocations.length !== 1 ? 's' : ''} · <span 
-    onClick={() => window.open('https://skillbridge.osd.mil/programs.htm', '_blank')}
+    onClick={() => window.open('https://skillbridge.osd.mil/locations.htm', '_blank')}
     style={{ color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>
     8,000+ more on DoD site →
   </span>
