@@ -349,7 +349,13 @@ export default function SkillBridgePage() {
           {/* Title row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
             <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0 }}>SkillBridge Map</h1>
-            <span style={{ color: '#9ca3af', fontSize: '13px' }}>{filteredLocations.length} location{filteredLocations.length !== 1 ? 's' : ''}</span>
+            <span style={{ color: '#9ca3af', fontSize: '13px' }}>
+  {filteredLocations.length} location{filteredLocations.length !== 1 ? 's' : ''} · <span 
+    onClick={() => window.open('https://skillbridge.osd.mil/programs.htm', '_blank')}
+    style={{ color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>
+    8,000+ more on DoD site →
+  </span>
+</span>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
               {user && (
                 <button onClick={() => { setShowSubmitForm(true); setSubmitMessage(null) }} style={{ padding: '7px 14px', borderRadius: '6px', border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
