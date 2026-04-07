@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import Sidebar from '../components/Sidebar'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -36,13 +37,8 @@ export default function SettingsPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) { router.push('/login'); return }
       setUser(session.user)
-
       const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
-
+        .from('profiles').select('*').eq('id', session.user.id).single()
       if (profileData) {
         setProfile(profileData)
         setFormData({
@@ -66,51 +62,37 @@ export default function SettingsPage() {
     setFormData(prev => ({ ...prev, [e.target.name]: val }))
   }
 
-const handleSave = async () => {
+  const handleSave = async () => {
     const isChangingDate = formData.separation_date !== profile?.separation_date
-
     if (isChangingDate) {
       const newDate = new Date(formData.separation_date)
       const today = new Date()
       const daysUntilNew = Math.ceil((newDate - today) / (1000 * 60 * 60 * 24))
       const isUnderOneYear = daysUntilNew <= 365 && daysUntilNew > 0
-
       const message = isUnderOneYear
-        ? `Are you sure you want to update your separation date to ${newDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}?\n\nSince your new date is less than a year away, your checklist will prioritize high priority items first. Your existing progress and tasks will not be affected.`
-        : `Are you sure you want to update your separation date to ${newDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}?\n\nYour existing checklist progress and tasks will not be affected.`
-
-      const confirmed = confirm(message)
-      if (!confirmed) return
+        ? `Update separation date to ${newDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}?\n\nSince your new date is less than a year away, your checklist will prioritize high priority items. Your progress will not be affected.`
+        : `Update separation date to ${newDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}?\n\nYour existing checklist progress and tasks will not be affected.`
+      if (!confirm(message)) return
     }
-
     setSaving(true)
-const { error } = await supabase
-      .from('profiles')
-      .update({
-        email: user.email,
-        full_name: formData.full_name,
-        branch: formData.branch,
-        separation_type: formData.separation_type,
-        separation_date: formData.separation_date,
-        phone_number: formData.phone_number,
-        notify_push: formData.notify_push,
-        notify_email: formData.notify_email,
-        notify_sms: formData.notify_sms
-      })
-      .eq('id', user.id)
-      
-
-    if (error) {
-      alert('Error saving: ' + error.message)
-      setSaving(false)
-      return
-    }
-
+    const { error } = await supabase.from('profiles').update({
+      email: user.email,
+      full_name: formData.full_name,
+      branch: formData.branch,
+      separation_type: formData.separation_type,
+      separation_date: formData.separation_date,
+      phone_number: formData.phone_number,
+      notify_push: formData.notify_push,
+      notify_email: formData.notify_email,
+      notify_sms: formData.notify_sms
+    }).eq('id', user.id)
+    if (error) { alert('Error saving: ' + error.message); setSaving(false); return }
     setProfile({ ...profile, ...formData })
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
+
   const handleSignOut = async () => {
     if (!confirm('Are you sure you want to sign out?')) return
     await supabase.auth.signOut()
@@ -118,228 +100,172 @@ const { error } = await supabase
   }
 
   if (loading) return (
-    <div style={{
-      display: 'flex', alignItems: 'center',
-      justifyContent: 'center', minHeight: '100vh',
-      backgroundColor: '#0a1628', color: 'white',
-      fontFamily: 'sans-serif'
-    }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#fff', color: '#111', fontFamily: 'sans-serif' }}>
       Loading settings...
     </div>
   )
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#0a1628',
-      color: 'white',
-      fontFamily: 'sans-serif',
-      padding: '2rem'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-        <button onClick={() => router.push('/dashboard')} style={backButtonStyle}>
-          ← Dashboard
-        </button>
-        <h1 style={{ fontSize: '1.5rem' }}>Settings</h1>
-      </div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
+      <Sidebar />
 
-      {/* Profile Section */}
-      <div style={cardStyle}>
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: '#8899aa' }}>
-          Profile Information
-        </h2>
-
-        <div style={formGridStyle}>
-          <div>
-            <label style={labelStyle}>Full Name</label>
-            <input
-              name="full_name"
-              value={formData.full_name}
-              onChange={handleChange}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input
-              value={user?.email || ''}
-              disabled
-              style={{ ...inputStyle, opacity: 0.5, cursor: 'not-allowed' }}
-            />
-            <p style={{ color: '#445566', fontSize: '0.75rem', marginTop: '4px' }}>
-              Email is managed by Google sign-in
-            </p>
-          </div>
-          <div>
-            <label style={labelStyle}>Branch</label>
-            <select name="branch" value={formData.branch} onChange={handleChange} style={inputStyle}>
-              <option value="">Select branch</option>
-              {branches.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Separation Type</label>
-            <select name="separation_type" value={formData.separation_type} onChange={handleChange} style={inputStyle}>
-              <option value="">Select type</option>
-              {separationTypes.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Separation Date</label>
-            <input
-              name="separation_date"
-              type="date"
-              value={formData.separation_date}
-              onChange={handleChange}
-              style={inputStyle}
-            />
-            <p style={{ color: '#445566', fontSize: '0.75rem', marginTop: '4px' }}>
-              Changing this will trigger a contract extension check
-            </p>
-          </div>
-          <div>
-            <label style={labelStyle}>Phone Number (for SMS reminders)</label>
-            <input
-              name="phone_number"
-              value={formData.phone_number}
-              onChange={handleChange}
-              placeholder="+1 (555) 000-0000"
-              style={inputStyle}
-            />
-          </div>
+      <div style={{ marginLeft: '220px', flex: 1 }}>
+        {/* Topbar */}
+        <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px' }}>
+          <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>Settings</h1>
+          <p style={{ color: '#6b7280', fontSize: '12px', margin: '2px 0 0' }}>Manage your profile, notifications, and account</p>
         </div>
-      </div>
 
-      {/* Notifications Section */}
-      <div style={cardStyle}>
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: '#8899aa' }}>
-          Notification Preferences
-        </h2>
-        <p style={{ color: '#445566', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-          Choose how you want to receive separation reminders and updates.
-        </p>
+        <div style={{ padding: '28px 32px', maxWidth: '800px' }}>
 
-        {[
-          { name: 'notify_push', label: 'Push Notifications', desc: 'Reminders via mobile app notifications' },
-          { name: 'notify_email', label: 'Email Reminders', desc: 'Reminders sent to your Google email' },
-          { name: 'notify_sms', label: 'SMS / Text Message', desc: 'Reminders sent to your phone number' },
-        ].map(item => (
-          <div key={item.name} style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '1rem 0',
-            borderBottom: '1px solid #1e3a5f'
-          }}>
-            <div>
-              <p style={{ margin: 0, fontWeight: '500' }}>{item.label}</p>
-              <p style={{ margin: '4px 0 0', color: '#445566', fontSize: '0.85rem' }}>{item.desc}</p>
+          {/* Profile card */}
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#111', margin: '0 0 20px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              Profile Information
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              <div>
+                <label style={labelStyle}>Full Name</label>
+                <input name="full_name" value={formData.full_name} onChange={handleChange} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Email</label>
+                <input value={user?.email || ''} disabled style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed', backgroundColor: '#f3f4f6' }} />
+                <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '4px' }}>Managed by Google sign-in</p>
+              </div>
+              <div>
+                <label style={labelStyle}>Branch</label>
+                <select name="branch" value={formData.branch} onChange={handleChange} style={inputStyle}>
+                  <option value="">Select branch</option>
+                  {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Separation Type</label>
+                <select name="separation_type" value={formData.separation_type} onChange={handleChange} style={inputStyle}>
+                  <option value="">Select type</option>
+                  {separationTypes.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Separation Date</label>
+                <input name="separation_date" type="date" value={formData.separation_date} onChange={handleChange} style={inputStyle} />
+                <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '4px' }}>Changing this updates your timeline and checklist priority</p>
+              </div>
+              <div>
+                <label style={labelStyle}>Phone Number</label>
+                <input name="phone_number" value={formData.phone_number} onChange={handleChange} placeholder="+1 (555) 000-0000" style={inputStyle} />
+                <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '4px' }}>Used for SMS reminders (coming soon)</p>
+              </div>
             </div>
-            <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
-              <input
-                type="checkbox"
-                name={item.name}
-                checked={formData[item.name]}
-                onChange={handleChange}
-                style={{ opacity: 0, width: 0, height: 0 }}
-              />
-              <span style={{
-                position: 'absolute',
-                cursor: 'pointer',
-                top: 0, left: 0, right: 0, bottom: 0,
-                backgroundColor: formData[item.name] ? '#2563eb' : '#1e3a5f',
-                borderRadius: '24px',
-                transition: '0.3s'
-              }}>
-                <span style={{
-                  position: 'absolute',
-                  height: '18px',
-                  width: '18px',
-                  left: formData[item.name] ? '23px' : '3px',
-                  bottom: '3px',
-                  backgroundColor: 'white',
-                  borderRadius: '50%',
-                  transition: '0.3s'
-                }} />
-              </span>
-            </label>
           </div>
-        ))}
-      </div>
 
-      {/* Save Button */}
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            backgroundColor: saved ? '#22c55e' : '#2563eb',
-            color: 'white',
-            border: 'none',
-            padding: '14px 28px',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            cursor: saving ? 'not-allowed' : 'pointer',
-            transition: 'background-color 0.3s'
-          }}
-        >
-          {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Changes'}
-        </button>
+          {/* Notifications card */}
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#111', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              Notification Preferences
+            </h2>
+            <p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '20px' }}>
+              Choose how you want to receive separation reminders and updates.
+            </p>
+            {[
+              { name: 'notify_push', label: 'Push Notifications', desc: 'Reminders via mobile app notifications' },
+              { name: 'notify_email', label: 'Email Reminders', desc: 'Reminders sent to your Google email' },
+              { name: 'notify_sms', label: 'SMS / Text Message', desc: 'Reminders sent to your phone number' },
+            ].map((item, i, arr) => (
+              <div key={item.name} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '14px 0',
+                borderBottom: i < arr.length - 1 ? '1px solid #f3f4f6' : 'none'
+              }}>
+                <div>
+                  <p style={{ margin: 0, fontWeight: '500', fontSize: '14px', color: '#111' }}>{item.label}</p>
+                  <p style={{ margin: '2px 0 0', color: '#6b7280', fontSize: '12px' }}>{item.desc}</p>
+                </div>
+                <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', flexShrink: 0, marginLeft: '16px' }}>
+                  <input type="checkbox" name={item.name} checked={formData[item.name]} onChange={handleChange} style={{ opacity: 0, width: 0, height: 0 }} />
+                  <span onClick={() => setFormData(prev => ({ ...prev, [item.name]: !prev[item.name] }))} style={{
+                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: formData[item.name] ? '#2563eb' : '#e5e7eb',
+                    borderRadius: '24px', transition: '0.2s'
+                  }}>
+                    <span style={{
+                      position: 'absolute', height: '18px', width: '18px',
+                      left: formData[item.name] ? '23px' : '3px', bottom: '3px',
+                      backgroundColor: 'white', borderRadius: '50%', transition: '0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                    }} />
+                  </span>
+                </label>
+              </div>
+            ))}
+          </div>
 
-        <button onClick={handleSignOut} style={{
-          backgroundColor: 'transparent',
-          color: '#ef4444',
-          border: '1px solid #ef444455',
-          padding: '14px 28px',
-          borderRadius: '8px',
-          fontSize: '1rem',
-          cursor: 'pointer'
-        }}>
-          Sign Out
-        </button>
+          {/* Account card */}
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#111', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              Account
+            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>
+                {formData.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
+              </div>
+              <div>
+                <p style={{ margin: 0, fontWeight: '500', fontSize: '14px', color: '#111' }}>{formData.full_name || 'No name set'}</p>
+                <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>{user?.email}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button onClick={handleSave} disabled={saving} style={{
+              backgroundColor: saved ? '#22c55e' : '#2563eb',
+              color: 'white', border: 'none', padding: '12px 28px',
+              borderRadius: '8px', fontSize: '14px', fontWeight: '600',
+              cursor: saving ? 'not-allowed' : 'pointer', transition: 'background-color 0.3s'
+            }}>
+              {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Changes'}
+            </button>
+            <button onClick={handleSignOut} style={{
+              backgroundColor: '#fff', color: '#ef4444',
+              border: '1px solid #fca5a5', padding: '12px 28px',
+              borderRadius: '8px', fontSize: '14px', cursor: 'pointer'
+            }}>
+              Sign Out
+            </button>
+          </div>
+
+        </div>
       </div>
     </div>
   )
 }
 
 const cardStyle = {
-  backgroundColor: '#0f2035',
-  border: '1px solid #1e3a5f',
+  backgroundColor: '#fff',
+  border: '1px solid #e5e7eb',
   borderRadius: '12px',
-  padding: '1.5rem',
-  marginBottom: '1.5rem'
-}
-
-const formGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-  gap: '1rem'
+  padding: '24px',
+  marginBottom: '16px'
 }
 
 const labelStyle = {
   display: 'block',
-  color: '#8899aa',
-  fontSize: '0.85rem',
-  marginBottom: '0.5rem'
+  color: '#6b7280',
+  fontSize: '13px',
+  marginBottom: '6px',
+  fontWeight: '500'
 }
 
 const inputStyle = {
   width: '100%',
   padding: '10px 12px',
   borderRadius: '8px',
-  border: '1px solid #1e3a5f',
-  backgroundColor: '#0a1628',
-  color: 'white',
-  fontSize: '0.95rem',
-  boxSizing: 'border-box'
-}
-
-const backButtonStyle = {
-  backgroundColor: 'transparent',
-  color: '#8899aa',
-  border: '1px solid #1e3a5f',
-  padding: '8px 16px',
-  borderRadius: '8px',
-  fontSize: '0.85rem',
-  cursor: 'pointer'
+  border: '1px solid #e5e7eb',
+  backgroundColor: '#fff',
+  color: '#111',
+  fontSize: '14px',
+  boxSizing: 'border-box',
+  outline: 'none'
 }
