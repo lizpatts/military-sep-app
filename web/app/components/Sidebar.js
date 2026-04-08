@@ -66,6 +66,7 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
     { label: 'SkillBridge', icon: '🗺️', path: '/skillbridge' },
     { label: 'Certifications', icon: '📜', path: '/certifications' },
     { label: 'Calculators', icon: '💰', path: '/calculators' },
+    { label: 'Documents', icon: '🗄️', path: '/documents' },
   ]
 
   const isActive = (path) => pathname === path
