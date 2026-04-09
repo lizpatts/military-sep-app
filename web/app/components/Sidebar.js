@@ -72,7 +72,7 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
   const isActive = (path) => pathname === path
 
   // Header ~107px, countdown ~116px when visible, padding ~16px
-  const countdownHeight = (!isGuest && daysRemaining !== null) ? 132 : 0
+  const countdownHeight = (!isGuest && daysRemaining !== null) ? 100 : 0
   const navMaxHeight = `calc(100vh - 107px - ${countdownHeight}px)`
 
   return (
