@@ -15,6 +15,15 @@ const BRANCH_CONFIG = {
 
 const DEFAULT_BRANCH = { color: '#2563eb', light: '#eff6ff', badge: '#dbeafe', text: '#1d4ed8', symbol: '🎖️', motto: 'Your transition starts here' }
 
+const NAV_ITEMS = [
+  { label: 'Dashboard',      icon: '⊞',  path: '/dashboard' },
+  { label: 'Checklist',      icon: '✅', path: '/checklist' },
+  { label: 'SkillBridge',    icon: '🗺️', path: '/skillbridge' },
+  { label: 'Certifications', icon: '📜', path: '/certifications' },
+  { label: 'Calculators',    icon: '💰', path: '/calculators' },
+  { label: 'Documents',      icon: '🗄️', path: '/documents' },
+]
+
 export default function Sidebar({ isGuest = false, guestBranch = '', guestSepType = '' }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -60,22 +69,11 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
     }
   }
 
-  const navItems = [
-    { label: 'Dashboard',      icon: '⊞',  path: '/dashboard' },
-    { label: 'Checklist',      icon: '✅', path: '/checklist' },
-    { label: 'SkillBridge',    icon: '🗺️', path: '/skillbridge' },
-    { label: 'Certifications', icon: '📜', path: '/certifications' },
-    { label: 'Calculators',    icon: '💰', path: '/calculators' },
-    { label: 'Documents',      icon: '🗄️', path: '/documents' },
-  ]
-
   const isActive = (path) => pathname === path
 
-  // Header area is approximately 110px (3px strip + logo/branch block + divider).
-  // Countdown widget is approximately 100px when visible.
-  // Nav gets everything in between, with overflowY: auto to scroll if needed.
-  const countdownHeight = (!isGuest && daysRemaining !== null) ? 116 : 0
-  const headerHeight = 110
+  // Header ~107px, countdown ~116px when visible, padding ~16px
+  const countdownHeight = (!isGuest && daysRemaining !== null) ? 132 : 0
+  const navMaxHeight = `calc(100vh - 107px - ${countdownHeight}px)`
 
   return (
     <div style={{
@@ -131,11 +129,10 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
         overflowY: 'auto',
         overflowX: 'hidden',
         flex: 1,
-        // Ensure the nav never grows taller than the available space so the
-        // countdown widget is never pushed off-screen.
         minHeight: 0,
+        maxHeight: navMaxHeight,
       }}>
-        {navItems.map(item => (
+        {NAV_ITEMS.map(item => (
           <div
             key={item.path}
             onClick={() => nav(item.path)}
