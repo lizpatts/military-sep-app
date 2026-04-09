@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import Sidebar from '../components/Sidebar'
 
 const BRANCH_CONFIG = {
   'Army':         { color: '#16a34a', light: '#f0fdf4', badge: '#dcfce7', text: '#15803d', symbol: '⚔️', motto: 'This We\'ll Defend' },
@@ -62,9 +63,7 @@ function DashboardPage() {
       setDaysRemaining(remaining)
       setTotalDays(total)
 
-      // Load checklist deadlines
-      const { data: allItems } = await supabase
-        .from('checklist_items').select('*')
+      const { data: allItems } = await supabase.from('checklist_items').select('*')
       const { data: allProgress } = await supabase
         .from('user_checklist_progress')
         .select('checklist_item_id, completed, hidden')
@@ -77,7 +76,6 @@ function DashboardPage() {
         hiddenMap[p.checklist_item_id] = p.hidden
       })
 
-      // Build deadlines — incomplete, not hidden, sorted by urgency
       const incompleteItems = (allItems || [])
         .filter(item => !completedMap[item.id] && !hiddenMap[item.id])
         .map(item => {
@@ -97,7 +95,6 @@ function DashboardPage() {
 
       setDeadlines(incompleteItems)
 
-      // Progress
       const { data: customItems } = await supabase
         .from('user_custom_tasks').select('id').eq('user_id', session.user.id)
       const { data: completedCustom } = await supabase
@@ -107,7 +104,7 @@ function DashboardPage() {
         if (hiddenMap[item.id] && !completedMap[item.id]) return false
         return true
       })
-const completedChecklist = activeItems.filter(item => completedMap[item.id]).length
+      const completedChecklist = activeItems.filter(item => completedMap[item.id]).length
       const taskTotal = activeItems.length + (customItems?.length || 0)
       const taskCompleted = completedChecklist + (completedCustom?.length || 0)
       setCompletedCount(taskCompleted)
@@ -115,7 +112,6 @@ const completedChecklist = activeItems.filter(item => completedMap[item.id]).len
       if (taskTotal > 0) setProgress(Math.round((taskCompleted / taskTotal) * 100))
     }
 
-    // Load VA scenario
     const { data: scenarios } = await supabase
       .from('va_disability_scenarios')
       .select('*').eq('user_id', session.user.id)
@@ -176,85 +172,7 @@ const completedChecklist = activeItems.filter(item => completedMap[item.id]).len
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
 
-      {/* Sidebar */}
-      <div style={{ width: '220px', minHeight: '100vh', backgroundColor: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0 }}>
-        {/* Branch color strip */}
-        <div style={{ height: '3px', backgroundColor: branchConfig.color, width: '100%' }} />
-
-        {/* Logo */}
-        <div style={{ padding: '16px 16px 12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: branchConfig.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🎖️</div>
-            <span style={{ fontWeight: '700', fontSize: '15px', color: '#111', letterSpacing: '-0.3px' }}>MilSep</span>
-          </div>
-          {/* Branch tag */}
-          {branch && (
-            <div style={{ backgroundColor: branchConfig.badge, borderRadius: '6px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '12px' }}>{branchConfig.symbol}</span>
-              <span style={{ color: branchConfig.text, fontSize: '10px', fontWeight: '700', letterSpacing: '0.5px' }}>{branch.toUpperCase()}</span>
-            </div>
-          )}
-          {branch && (
-            <p style={{ color: '#9ca3af', fontSize: '10px', margin: '4px 0 0', fontStyle: 'italic' }}>{branchConfig.motto}</p>
-          )}
-        </div>
-
-        <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '0 16px' }} />
-
-        {/* Nav items */}
-        <nav style={{ padding: '8px', flex: 1 }}>
-          {[
-            { label: 'Dashboard', icon: '⊞', path: '/dashboard' },
-            { label: 'Checklist', icon: '✅', path: '/checklist' },
-            { label: 'SkillBridge', icon: '🗺️', path: '/skillbridge' },
-            { label: 'Certifications', icon: '📜', path: '/certifications' },
-            { label: 'Calculators', icon: '💰', path: '/calculators' },
-          ].map(item => {
-            const isActive = item.path === '/dashboard'
-            return (
-              <div key={item.path}
-                onClick={() => isGuest ? guestNav(item.path) : router.push(item.path)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '9px 10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '2px',
-                  backgroundColor: isActive ? branchConfig.light : 'transparent',
-                  borderLeft: isActive ? `3px solid ${branchConfig.color}` : '3px solid transparent',
-                  color: isActive ? branchConfig.text : '#6b7280',
-                  fontWeight: isActive ? '600' : '400', fontSize: '13px',
-                  transition: 'all 0.15s'
-                }}
-              >
-                <span style={{ fontSize: '14px' }}>{item.icon}</span>
-                {item.label}
-              </div>
-            )
-          })}
-
-          <div style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '600', letterSpacing: '0.8px', padding: '12px 10px 4px', textTransform: 'uppercase' }}>Content</div>
-          <div onClick={() => isGuest ? guestNav('/blog') : router.push('/blog')}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px', borderRadius: '6px', cursor: 'pointer', color: '#6b7280', fontSize: '13px', borderLeft: '3px solid transparent' }}>
-            <span>📰</span> Blog
-          </div>
-
-          <div style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '600', letterSpacing: '0.8px', padding: '12px 10px 4px', textTransform: 'uppercase' }}>Account</div>
-          <div onClick={() => isGuest ? guestNav('/settings') : router.push('/settings')}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px', borderRadius: '6px', cursor: 'pointer', color: '#6b7280', fontSize: '13px', borderLeft: '3px solid transparent', opacity: isGuest ? 0.4 : 1 }}>
-            <span>⚙️</span> Settings
-          </div>
-        </nav>
-
-        {/* Separation countdown in sidebar */}
-        {!isGuest && daysRemaining !== null && (
-          <div style={{ margin: '0 12px 16px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-            <p style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '600', letterSpacing: '0.6px', margin: '0 0 4px', textTransform: 'uppercase' }}>Days to Separation</p>
-            <p style={{ color: branchConfig.color, fontSize: '28px', fontWeight: '700', margin: '0 0 6px', letterSpacing: '-1px' }}>{daysRemaining}</p>
-            <div style={{ height: '3px', backgroundColor: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${timeProgress}%`, backgroundColor: branchConfig.color, borderRadius: '2px' }} />
-            </div>
-            <p style={{ color: '#9ca3af', fontSize: '10px', margin: '4px 0 0' }}>{timeProgress}% elapsed</p>
-          </div>
-        )}
-      </div>
+      <Sidebar isGuest={isGuest} guestBranch={guestBranch} guestSepType={guestSepType} />
 
       {/* Main content */}
       <div style={{ marginLeft: '220px', flex: 1, minHeight: '100vh' }}>
@@ -319,11 +237,12 @@ const completedChecklist = activeItems.filter(item => completedMap[item.id]).len
             </div>
           )}
 
-{/* Stat cards */}
+          {/* Stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: vaScenario ? '1fr 1fr 1fr' : '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
 
             {/* Checklist progress — always green */}
-            <div onClick={() => !isGuest && router.push('/checklist')} style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
+            <div onClick={() => !isGuest && router.push('/checklist')}
+              style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
               onMouseEnter={e => { if (!isGuest) e.currentTarget.style.borderColor = '#22c55e' }}
               onMouseLeave={e => { if (!isGuest) e.currentTarget.style.borderColor = '#e5e7eb' }}>
               <p style={{ color: '#6b7280', fontSize: '11px', fontWeight: '600', letterSpacing: '0.6px', textTransform: 'uppercase', margin: '0 0 8px' }}>Checklist Progress</p>
@@ -339,8 +258,9 @@ const completedChecklist = activeItems.filter(item => completedMap[item.id]).len
               <p style={{ color: '#9ca3af', fontSize: '11px', margin: '6px 0 0' }}>{isGuest ? 'Sign in to track' : `${progress}% complete`}</p>
             </div>
 
-            {/* Tasks completed — orange/red accents */}
-            <div onClick={() => !isGuest && router.push('/checklist')} style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
+            {/* Tasks completed */}
+            <div onClick={() => !isGuest && router.push('/checklist')}
+              style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
               onMouseEnter={e => { if (!isGuest) e.currentTarget.style.borderColor = '#f59e0b' }}
               onMouseLeave={e => { if (!isGuest) e.currentTarget.style.borderColor = '#e5e7eb' }}>
               <p style={{ color: '#6b7280', fontSize: '11px', fontWeight: '600', letterSpacing: '0.6px', textTransform: 'uppercase', margin: '0 0 8px' }}>Tasks Completed</p>
@@ -419,9 +339,10 @@ const completedChecklist = activeItems.filter(item => completedMap[item.id]).len
                 {deadlines.map((item, i) => {
                   const s = getPriorityStyle(item.priority, item.dueInDays)
                   return (
-<div key={item.id}
+                    <div key={item.id}
                       onClick={() => router.push('/checklist')}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', backgroundColor: '#fff', borderBottom: i < deadlines.length - 1 ? '1px solid #e5e7eb' : 'none', cursor: 'pointer', borderLeft: `4px solid ${s.border}` }}>                      <div style={{ flex: 1 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', backgroundColor: '#fff', borderBottom: i < deadlines.length - 1 ? '1px solid #e5e7eb' : 'none', cursor: 'pointer', borderLeft: `4px solid ${s.border}` }}>
+                      <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                           <span style={{ backgroundColor: s.labelBg, color: s.labelColor, fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', border: `1px solid ${s.border}` }}>{s.label}</span>
                           {item.category && <span style={{ color: '#9ca3af', fontSize: '11px' }}>{item.category}</span>}
