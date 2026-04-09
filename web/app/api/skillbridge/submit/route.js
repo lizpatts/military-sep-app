@@ -24,7 +24,7 @@ const cookieStore = await cookies()
   }
 
   const body = await request.json()
-const { employer_name, industry, city, state, duration_weeks, url, description, notes, branches_eligible } = body
+const { employer_name, industry, city, state, duration_weeks, url, description, notes, branches_eligible, submitted_by_branch } = body
 
 if (!employer_name || !city || !state) {
   return Response.json({ error: 'Missing required fields.' }, { status: 400 })
@@ -62,6 +62,7 @@ const { data, error } = await supabase
     branches_eligible: branches_eligible || 'all',
     is_community_submitted: true,
     submitted_by: user.id,
+submitted_by_branch: submitted_by_branch?.trim() || null,
     status: 'pending'
   }])
   .select()
