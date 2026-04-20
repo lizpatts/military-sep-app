@@ -60,134 +60,147 @@ export default function OnboardingPage() {
   const accentColor = selectedBranch?.color || '#2563eb'
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#f9fafb',
+      fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif',
+      overflowY: 'auto'
+    }}>
 
-      {/* Left panel */}
-      <div style={{ flex: 1, backgroundColor: accentColor, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '3rem', color: 'white', transition: 'background-color 0.4s ease' }}>
-        <div style={{ maxWidth: '380px', textAlign: 'center' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem', transition: 'all 0.3s' }}>
-            {selectedBranch ? selectedBranch.symbol : '🎖️'}
+      {/* Top banner — compact, always visible */}
+      <div style={{
+        backgroundColor: accentColor,
+        transition: 'background-color 0.4s ease',
+        padding: '20px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '28px' }}>{selectedBranch ? selectedBranch.symbol : '🎖️'}</span>
+          <div>
+            <h1 style={{ fontSize: '16px', fontWeight: '700', color: 'white', margin: 0, letterSpacing: '-0.3px' }}>
+              {selectedBranch ? formData.branch : 'Welcome, Service Member'}
+            </h1>
+            {selectedBranch && (
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontStyle: 'italic', margin: 0 }}>
+                "{selectedBranch.motto}"
+              </p>
+            )}
           </div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: '700', letterSpacing: '-0.4px', margin: '0 0 12px' }}>
-            {selectedBranch ? `${formData.branch}` : 'Welcome, Service Member'}
-          </h1>
-          {selectedBranch && (
-            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', fontStyle: 'italic', margin: '0 0 24px' }}>
-              "{selectedBranch.motto}"
-            </p>
-          )}
-          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
-            {!selectedBranch
-              ? 'We\'ll customize your experience based on your branch and separation details.'
-              : 'Your dashboard, checklist, and resources will be tailored to your transition.'}
-          </p>
+        </div>
 
-          {/* Progress dots */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '40px' }}>
-            {[1, 2, 3, 4].map(s => (
-              <div key={s} style={{
-                width: s <= step ? '24px' : '8px', height: '8px', borderRadius: '4px',
-                backgroundColor: s <= step ? 'white' : 'rgba(255,255,255,0.3)',
-                transition: 'all 0.3s ease'
-              }} />
-            ))}
-          </div>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginTop: '8px' }}>
-            Step {step} of 4
-          </p>
+        {/* Progress dots */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {[1, 2, 3, 4].map(s => (
+            <div key={s} style={{
+              width: s <= step ? '20px' : '8px', height: '8px', borderRadius: '4px',
+              backgroundColor: s <= step ? 'white' : 'rgba(255,255,255,0.3)',
+              transition: 'all 0.3s ease'
+            }} />
+          ))}
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginLeft: '4px' }}>
+            {step}/4
+          </span>
         </div>
       </div>
 
-      {/* Right panel */}
-      <div style={{ width: '480px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '3rem' }}>
-        <div style={{ maxWidth: '360px', width: '100%', margin: '0 auto' }}>
+      {/* Form area — scrollable */}
+      <div style={{
+        maxWidth: '520px',
+        width: '100%',
+        margin: '0 auto',
+        padding: '32px 24px 48px',
+        boxSizing: 'border-box'
+      }}>
 
-          <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111', margin: '0 0 8px', letterSpacing: '-0.4px' }}>
-            Let's get you set up
-          </h2>
-          <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 28px' }}>
-            Tell us about your transition so we can personalize your experience.
-          </p>
+        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111', margin: '0 0 8px', letterSpacing: '-0.4px' }}>
+          Let's get you set up
+        </h2>
+        <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 28px' }}>
+          Tell us about your transition so we can personalize your experience.
+        </p>
 
-          {!user && (
-            <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px', marginBottom: '20px' }}>
-              <p style={{ color: '#92400e', fontSize: '13px', margin: 0 }}>⏳ Loading your session...</p>
-            </div>
-          )}
+        {!user && (
+          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px', marginBottom: '20px' }}>
+            <p style={{ color: '#92400e', fontSize: '13px', margin: 0 }}>⏳ Loading your session...</p>
+          </div>
+        )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-            {/* Full name */}
-            <div>
-              <label style={labelStyle}>Full Name</label>
-              <input name="full_name" placeholder="e.g. Jane Smith" value={formData.full_name}
-                onChange={e => { handleChange(e); setStep(Math.max(step, 1)) }}
-                style={inputStyle} />
-            </div>
-
-            {/* Branch */}
-            <div>
-              <label style={labelStyle}>Branch of Service</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {branches.map(b => {
-                  const bc = BRANCH_CONFIG[b]
-                  const isSelected = formData.branch === b
-                  return (
-                    <button key={b} onClick={() => { setFormData(prev => ({ ...prev, branch: b })); setStep(Math.max(step, 2)) }}
-                      style={{
-                        padding: '10px 12px', borderRadius: '8px', border: '2px solid',
-                        borderColor: isSelected ? bc.color : '#e5e7eb',
-                        backgroundColor: isSelected ? bc.color + '11' : '#fff',
-                        color: isSelected ? bc.color : '#6b7280',
-                        cursor: 'pointer', fontSize: '13px', fontWeight: isSelected ? '600' : '400',
-                        display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.15s'
-                      }}>
-                      <span>{bc.symbol}</span> {b}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Separation type */}
-            <div>
-              <label style={labelStyle}>Separation Type</label>
-              <select name="separation_type" value={formData.separation_type}
-                onChange={e => { handleChange(e); setStep(Math.max(step, 3)) }}
-                style={inputStyle}>
-                <option value="">Select type</option>
-                {separationTypes.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-
-            {/* Separation date */}
-            <div>
-              <label style={labelStyle}>Separation Date</label>
-              <input name="separation_date" type="date" value={formData.separation_date}
-                onChange={e => { handleChange(e); setStep(Math.max(step, 4)) }}
-                style={inputStyle} />
-              <p style={{ color: '#9ca3af', fontSize: '11px', margin: '4px 0 0' }}>
-                This powers your countdown timer and checklist priorities.
-              </p>
-            </div>
-
-            {/* Submit */}
-            <button onClick={handleSubmit} disabled={loading || !user} style={{
-              backgroundColor: user ? accentColor : '#e5e7eb',
-              color: user ? 'white' : '#9ca3af',
-              border: 'none', padding: '14px', borderRadius: '8px',
-              fontSize: '14px', fontWeight: '600',
-              cursor: user ? 'pointer' : 'not-allowed', marginTop: '8px',
-              transition: 'background-color 0.3s'
-            }}>
-              {loading ? 'Saving...' : !user ? 'Loading session...' : 'Continue to Dashboard →'}
-            </button>
+          {/* Full name */}
+          <div>
+            <label style={labelStyle}>Full Name</label>
+            <input name="full_name" placeholder="e.g. Jane Smith" value={formData.full_name}
+              onChange={e => { handleChange(e); setStep(Math.max(step, 1)) }}
+              style={inputStyle} />
           </div>
 
-          <p style={{ color: '#9ca3af', fontSize: '11px', textAlign: 'center', marginTop: '20px' }}>
-            You can update all of this later in Settings.
-          </p>
+          {/* Branch */}
+          <div>
+            <label style={labelStyle}>Branch of Service</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {branches.map(b => {
+                const bc = BRANCH_CONFIG[b]
+                const isSelected = formData.branch === b
+                return (
+                  <button key={b} onClick={() => { setFormData(prev => ({ ...prev, branch: b })); setStep(Math.max(step, 2)) }}
+                    style={{
+                      padding: '10px 12px', borderRadius: '8px', border: '2px solid',
+                      borderColor: isSelected ? bc.color : '#e5e7eb',
+                      backgroundColor: isSelected ? bc.color + '11' : '#fff',
+                      color: isSelected ? bc.color : '#6b7280',
+                      cursor: 'pointer', fontSize: '13px', fontWeight: isSelected ? '600' : '400',
+                      display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.15s'
+                    }}>
+                    <span>{bc.symbol}</span> {b}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Separation type */}
+          <div>
+            <label style={labelStyle}>Separation Type</label>
+            <select name="separation_type" value={formData.separation_type}
+              onChange={e => { handleChange(e); setStep(Math.max(step, 3)) }}
+              style={inputStyle}>
+              <option value="">Select type</option>
+              {separationTypes.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          {/* Separation date */}
+          <div>
+            <label style={labelStyle}>Separation Date</label>
+            <input name="separation_date" type="date" value={formData.separation_date}
+              onChange={e => { handleChange(e); setStep(Math.max(step, 4)) }}
+              style={inputStyle} />
+            <p style={{ color: '#9ca3af', fontSize: '11px', margin: '4px 0 0' }}>
+              This powers your countdown timer and checklist priorities.
+            </p>
+          </div>
+
+          {/* Submit */}
+          <button onClick={handleSubmit} disabled={loading || !user} style={{
+            backgroundColor: user ? accentColor : '#e5e7eb',
+            color: user ? 'white' : '#9ca3af',
+            border: 'none', padding: '14px', borderRadius: '8px',
+            fontSize: '14px', fontWeight: '600',
+            cursor: user ? 'pointer' : 'not-allowed',
+            transition: 'background-color 0.3s'
+          }}>
+            {loading ? 'Saving...' : !user ? 'Loading session...' : 'Continue to Dashboard →'}
+          </button>
         </div>
+
+        <p style={{ color: '#9ca3af', fontSize: '11px', textAlign: 'center', marginTop: '20px' }}>
+          You can update all of this later in Settings.
+        </p>
       </div>
     </div>
   )
