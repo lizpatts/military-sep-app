@@ -366,19 +366,17 @@ export default function DocumentsPage() {
                   <div key={doc.id} style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px', cursor: 'pointer', transition: 'border-color 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = '#2563eb'}
                     onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: cc.bg, border: `1px solid ${cc.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                          {getFileIcon(doc.file_type)}
-                        </div>
-                        <div>
-                          <p style={{ margin: 0, fontWeight: '600', fontSize: '13px', color: '#111', lineHeight: '1.3' }}>{doc.label}</p>
-                          <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#9ca3af' }}>{formatFileSize(doc.file_size)} · {new Date(doc.created_at).toLocaleDateString()}</p>
-                        </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: cc.bg, border: `1px solid ${cc.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        {getFileIcon(doc.file_type)}
                       </div>
-                      <span style={{ backgroundColor: cc.bg, color: cc.text, border: `1px solid ${cc.border}`, fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: '600', flexShrink: 0 }}>
-                        {doc.category}
-                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontWeight: '600', fontSize: '13px', color: '#111', lineHeight: '1.3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.label}</p>
+                        <p style={{ margin: '2px 0 4px', fontSize: '11px', color: '#9ca3af' }}>{formatFileSize(doc.file_size)} · {new Date(doc.created_at).toLocaleDateString()}</p>
+                        <span style={{ backgroundColor: cc.bg, color: cc.text, border: `1px solid ${cc.border}`, fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: '600', display: 'inline-block' }}>
+                          {doc.category}
+                        </span>
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '6px' }}>
