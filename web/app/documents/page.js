@@ -23,11 +23,36 @@ export default function DocumentsPage() {
   const [uploadForm, setUploadForm] = useState({ label: '', category: 'General' })
   const [pendingFile, setPendingFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [isGuest, setIsGuest] = useState(false)
+  const [guestBranch, setGuestBranch] = useState('')
+  const [guestSepType, setGuestSepType] = useState('')
 
   useEffect(() => {
     const loadData = async () => {
+      const params = new URLSearchParams(window.location.search)
+      const guestMode = params.get('guest') === 'true'
+      setIsGuest(guestMode)
+      setGuestBranch(params.get('branch') || '')
+      setGuestSepType(params.get('separation_type') || '')
+
+      if (guestMode) {
+        setLoading(false)
+        return
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) { router.push('/login'); return }
+      if (!session?.user) {
+        const recheck = new URLSearchParams(window.location.search)
+        if (recheck.get('guest') === 'true') {
+          setIsGuest(true)
+          setGuestBranch(recheck.get('branch') || '')
+          setGuestSepType(recheck.get('separation_type') || '')
+          setLoading(false)
+          return
+        }
+        router.push('/login')
+        return
+      }
       setUser(session.user)
       await loadDocuments(session.user.id)
       setLoading(false)
@@ -47,23 +72,19 @@ export default function DocumentsPage() {
   const handleFileSelect = (e) => {
     const file = e.target.files[0]
     if (!file) return
-
     if (file.size > MAX_FILE_SIZE) {
       setUploadMessage({ type: 'error', text: 'File is too large. Maximum size is 10MB.' })
       return
     }
-
     const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic']
     if (!allowed.includes(file.type)) {
       setUploadMessage({ type: 'error', text: 'File type not supported. Please upload PDF, JPG, PNG, or HEIC.' })
       return
     }
-
     if (documents.length >= MAX_DOCS) {
       setUploadMessage({ type: 'error', text: `Free tier limit reached (${MAX_DOCS} documents). Premium coming soon.` })
       return
     }
-
     setPendingFile(file)
     setUploadForm({ label: file.name.replace(/\.[^/.]+$/, ''), category: 'General' })
     setShowUploadForm(true)
@@ -74,38 +95,24 @@ export default function DocumentsPage() {
     if (!pendingFile || !user) return
     setUploading(true)
     setUploadMessage(null)
-
     const fileExt = pendingFile.name.split('.').pop()
     const filePath = `${user.id}/${Date.now()}.${fileExt}`
-
-    const { error: storageError } = await supabase.storage
-      .from('storage')
-      .upload(filePath, pendingFile)
-
+    const { error: storageError } = await supabase.storage.from('storage').upload(filePath, pendingFile)
     if (storageError) {
       setUploadMessage({ type: 'error', text: 'Upload failed: ' + storageError.message })
       setUploading(false)
       return
     }
-
-    const { error: dbError } = await supabase
-      .from('user_documents')
-      .insert({
-        user_id: user.id,
-        file_name: pendingFile.name,
-        file_path: filePath,
-        file_size: pendingFile.size,
-        file_type: pendingFile.type,
-        category: uploadForm.category,
-        label: uploadForm.label || pendingFile.name
-      })
-
+    const { error: dbError } = await supabase.from('user_documents').insert({
+      user_id: user.id, file_name: pendingFile.name, file_path: filePath,
+      file_size: pendingFile.size, file_type: pendingFile.type,
+      category: uploadForm.category, label: uploadForm.label || pendingFile.name
+    })
     if (dbError) {
       setUploadMessage({ type: 'error', text: 'Failed to save document: ' + dbError.message })
       setUploading(false)
       return
     }
-
     await loadDocuments(user.id)
     setUploadMessage({ type: 'success', text: '✅ Document uploaded successfully!' })
     setShowUploadForm(false)
@@ -126,16 +133,12 @@ export default function DocumentsPage() {
 
   const handlePreview = async (doc) => {
     setSelectedDoc(doc)
-    const { data } = await supabase.storage
-      .from('storage')
-      .createSignedUrl(doc.file_path, 60)
+    const { data } = await supabase.storage.from('storage').createSignedUrl(doc.file_path, 60)
     if (data?.signedUrl) setPreviewUrl(data.signedUrl)
   }
 
   const handleDownload = async (doc) => {
-    const { data } = await supabase.storage
-      .from('storage')
-      .createSignedUrl(doc.file_path, 60)
+    const { data } = await supabase.storage.from('storage').createSignedUrl(doc.file_path, 60)
     if (data?.signedUrl) {
       const a = document.createElement('a')
       a.href = data.signedUrl
@@ -145,9 +148,7 @@ export default function DocumentsPage() {
   }
 
   const handleShare = async (doc) => {
-    const { data } = await supabase.storage
-      .from('storage')
-      .createSignedUrl(doc.file_path, 60 * 60 * 24)
+    const { data } = await supabase.storage.from('storage').createSignedUrl(doc.file_path, 60 * 60 * 24)
     if (!data?.signedUrl) return
     if (navigator.share) {
       navigator.share({ title: doc.label, text: `Here is my document: ${doc.label}`, url: data.signedUrl })
@@ -189,10 +190,50 @@ export default function DocumentsPage() {
     </div>
   )
 
+  // Guest view — show sign up prompt instead of vault contents
+  if (isGuest) return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
+      <Sidebar isGuest={true} guestBranch={guestBranch} guestSepType={guestSepType} />
+      <div style={{ marginLeft: '220px', flex: 1 }}>
+        <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px' }}>
+          <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>Documents Vault</h1>
+          <p style={{ color: '#6b7280', fontSize: '12px', margin: '2px 0 0' }}>Store and access your important military documents</p>
+        </div>
+        <div style={{ padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)' }}>
+          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '48px 40px', textAlign: 'center', maxWidth: '440px', width: '100%' }}>
+            <p style={{ fontSize: '3rem', margin: '0 0 16px' }}>🗄️</p>
+            <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111', margin: '0 0 10px', letterSpacing: '-0.3px' }}>Documents Vault</h2>
+            <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 8px', lineHeight: '1.6' }}>
+              Store your PCS orders, housing documents, legal paperwork, and more — all in one secure place.
+            </p>
+            <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 24px', lineHeight: '1.6' }}>
+              Creating an account is <strong style={{ color: '#111' }}>free</strong> and takes less than a minute with Google Sign-In.
+            </p>
+            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '10px', padding: '12px 16px', marginBottom: '24px', textAlign: 'left' }}>
+              <p style={{ margin: '0 0 6px', fontWeight: '600', color: '#15803d', fontSize: '13px' }}>Free account includes:</p>
+              <p style={{ margin: '2px 0', color: '#6b7280', fontSize: '13px' }}>✓ Upload up to 10 documents</p>
+              <p style={{ margin: '2px 0', color: '#6b7280', fontSize: '13px' }}>✓ Preview, download, and share files</p>
+              <p style={{ margin: '2px 0', color: '#6b7280', fontSize: '13px' }}>✓ Organize by category</p>
+              <p style={{ margin: '2px 0', color: '#6b7280', fontSize: '13px' }}>✓ Full checklist progress tracking</p>
+              <p style={{ margin: '2px 0', color: '#6b7280', fontSize: '13px' }}>✓ Save SkillBridge favorites</p>
+            </div>
+            <button onClick={() => router.push('/login')}
+              style={{ width: '100%', backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginBottom: '10px' }}>
+              Create Free Account →
+            </button>
+            <button onClick={() => router.push('/login')}
+              style={{ width: '100%', backgroundColor: '#f9fafb', color: '#6b7280', border: '1px solid #e5e7eb', padding: '12px', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>
+              Already have an account? Sign in
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
       <Sidebar />
-
       <div style={{ marginLeft: '220px', flex: 1 }}>
         {/* Topbar */}
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -240,22 +281,18 @@ export default function DocumentsPage() {
                 <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 16px' }}>
                   {getFileIcon(pendingFile.type)} {pendingFile.name} · {formatFileSize(pendingFile.size)}
                 </p>
-
-                {/* Warning inside modal */}
                 <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                   <span style={{ fontSize: '13px', flexShrink: 0 }}>⚠️</span>
                   <p style={{ margin: 0, color: '#991b1b', fontSize: '12px', lineHeight: '1.5' }}>
                     Do not upload DD214s, medical records, or documents with SSNs or health information.
                   </p>
                 </div>
-
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', color: '#374151', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>Document Label</label>
                   <input value={uploadForm.label} onChange={e => setUploadForm(prev => ({ ...prev, label: e.target.value }))}
                     placeholder="e.g. PCS Orders 2024, BAH Approval Letter"
                     style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', backgroundColor: '#f9fafb', color: '#111', fontSize: '14px', boxSizing: 'border-box' }} />
                 </div>
-
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', color: '#374151', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>Category</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
@@ -271,7 +308,6 @@ export default function DocumentsPage() {
                     })}
                   </div>
                 </div>
-
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button onClick={() => { setShowUploadForm(false); setPendingFile(null); fileInputRef.current.value = '' }}
                     style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#f9fafb', color: '#6b7280', cursor: 'pointer', fontSize: '14px' }}>
@@ -296,15 +332,9 @@ export default function DocumentsPage() {
                     <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>{selectedDoc.category} · {formatFileSize(selectedDoc.file_size)}</p>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => handleDownload(selectedDoc)} style={{ backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
-                      Download
-                    </button>
-                    <button onClick={() => handleShare(selectedDoc)} style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
-                      Share
-                    </button>
-                    <button onClick={() => { setSelectedDoc(null); setPreviewUrl(null) }} style={{ backgroundColor: '#f9fafb', color: '#6b7280', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px' }}>
-                      Close
-                    </button>
+                    <button onClick={() => handleDownload(selectedDoc)} style={{ backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Download</button>
+                    <button onClick={() => handleShare(selectedDoc)} style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Share</button>
+                    <button onClick={() => { setSelectedDoc(null); setPreviewUrl(null) }} style={{ backgroundColor: '#f9fafb', color: '#6b7280', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px' }}>Close</button>
                   </div>
                 </div>
                 <div style={{ flex: 1, overflow: 'auto', padding: '1rem', backgroundColor: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -378,20 +408,11 @@ export default function DocumentsPage() {
                         </span>
                       </div>
                     </div>
-
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => handlePreview(doc)} style={{ flex: 1, backgroundColor: '#f9fafb', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>
-                        👁 Preview
-                      </button>
-                      <button onClick={() => handleDownload(doc)} style={{ flex: 1, backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>
-                        ↓ Download
-                      </button>
-                      <button onClick={() => handleShare(doc)} style={{ flex: 1, backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>
-                        ↗ Share
-                      </button>
-                      <button onClick={() => handleDelete(doc)} style={{ backgroundColor: '#fff', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '7px 10px', cursor: 'pointer', fontSize: '12px' }}>
-                        🗑
-                      </button>
+                      <button onClick={() => handlePreview(doc)} style={{ flex: 1, backgroundColor: '#f9fafb', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>👁 Preview</button>
+                      <button onClick={() => handleDownload(doc)} style={{ flex: 1, backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>↓ Download</button>
+                      <button onClick={() => handleShare(doc)} style={{ flex: 1, backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>↗ Share</button>
+                      <button onClick={() => handleDelete(doc)} style={{ backgroundColor: '#fff', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '7px 10px', cursor: 'pointer', fontSize: '12px' }}>🗑</button>
                     </div>
                   </div>
                 )
