@@ -79,7 +79,7 @@ export default function DocumentsPage() {
     const filePath = `${user.id}/${Date.now()}.${fileExt}`
 
     const { error: storageError } = await supabase.storage
-      .from('documents')
+      .from('storage')
       .upload(filePath, pendingFile)
 
     if (storageError) {
@@ -118,7 +118,7 @@ export default function DocumentsPage() {
 
   const handleDelete = async (doc) => {
     if (!confirm(`Delete "${doc.label}"? This cannot be undone.`)) return
-    await supabase.storage.from('documents').remove([doc.file_path])
+    await supabase.storage.from('storage').remove([doc.file_path])
     await supabase.from('user_documents').delete().eq('id', doc.id)
     setDocuments(prev => prev.filter(d => d.id !== doc.id))
     if (selectedDoc?.id === doc.id) setSelectedDoc(null)
@@ -127,14 +127,14 @@ export default function DocumentsPage() {
   const handlePreview = async (doc) => {
     setSelectedDoc(doc)
     const { data } = await supabase.storage
-      .from('documents')
+      .from('storage')
       .createSignedUrl(doc.file_path, 60)
     if (data?.signedUrl) setPreviewUrl(data.signedUrl)
   }
 
   const handleDownload = async (doc) => {
     const { data } = await supabase.storage
-      .from('documents')
+      .from('storage')
       .createSignedUrl(doc.file_path, 60)
     if (data?.signedUrl) {
       const a = document.createElement('a')
@@ -146,7 +146,7 @@ export default function DocumentsPage() {
 
   const handleShare = async (doc) => {
     const { data } = await supabase.storage
-      .from('documents')
+      .from('storage')
       .createSignedUrl(doc.file_path, 60 * 60 * 24)
     if (!data?.signedUrl) return
     if (navigator.share) {
