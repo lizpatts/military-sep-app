@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Sidebar from '../components/Sidebar'
 
-const CATEGORIES = ['All', 'DD214', 'Medical', 'Legal', 'Finance', 'Housing', 'Orders', 'General']
+const CATEGORIES = ['All', 'Legal', 'Finance', 'Housing', 'Orders', 'General']
 const MAX_DOCS = 10
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
@@ -118,7 +118,6 @@ export default function DocumentsPage() {
 
   const handleDelete = async (doc) => {
     if (!confirm(`Delete "${doc.label}"? This cannot be undone.`)) return
-
     await supabase.storage.from('documents').remove([doc.file_path])
     await supabase.from('user_documents').delete().eq('id', doc.id)
     setDocuments(prev => prev.filter(d => d.id !== doc.id))
@@ -148,15 +147,10 @@ export default function DocumentsPage() {
   const handleShare = async (doc) => {
     const { data } = await supabase.storage
       .from('documents')
-      .createSignedUrl(doc.file_path, 60 * 60 * 24) // 24 hour link
+      .createSignedUrl(doc.file_path, 60 * 60 * 24)
     if (!data?.signedUrl) return
-
     if (navigator.share) {
-      navigator.share({
-        title: doc.label,
-        text: `Here is my document: ${doc.label}`,
-        url: data.signedUrl
-      })
+      navigator.share({ title: doc.label, text: `Here is my document: ${doc.label}`, url: data.signedUrl })
     } else {
       navigator.clipboard.writeText(data.signedUrl)
       alert('Share link copied to clipboard! Link expires in 24 hours.')
@@ -172,12 +166,10 @@ export default function DocumentsPage() {
 
   const getCategoryColor = (cat) => {
     const colors = {
-      'DD214': { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8' },
-      'Medical': { bg: '#f0fdf4', border: '#86efac', text: '#15803d' },
-      'Legal': { bg: '#faf5ff', border: '#e9d5ff', text: '#7c3aed' },
+      'Legal':   { bg: '#faf5ff', border: '#e9d5ff', text: '#7c3aed' },
       'Finance': { bg: '#fffbeb', border: '#fcd34d', text: '#d97706' },
       'Housing': { bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1' },
-      'Orders': { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626' },
+      'Orders':  { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626' },
       'General': { bg: '#f9fafb', border: '#e5e7eb', text: '#6b7280' },
     }
     return colors[cat] || colors['General']
@@ -222,6 +214,17 @@ export default function DocumentsPage() {
 
         <div style={{ padding: '28px 32px' }}>
 
+          {/* Security notice */}
+          <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+            <span style={{ fontSize: '16px', flexShrink: 0 }}>⚠️</span>
+            <div>
+              <p style={{ margin: '0 0 2px', fontWeight: '600', color: '#991b1b', fontSize: '13px' }}>Do not upload sensitive documents</p>
+              <p style={{ margin: 0, color: '#6b7280', fontSize: '12px', lineHeight: '1.5' }}>
+                Do not upload DD214s, medical records, or any documents containing Social Security Numbers, financial account numbers, or personal health information. This vault is intended for general military documents such as orders, housing, legal, and finance paperwork.
+              </p>
+            </div>
+          </div>
+
           {/* Upload message */}
           {uploadMessage && (
             <div style={{ backgroundColor: uploadMessage.type === 'success' ? '#f0fdf4' : '#fef2f2', border: `1px solid ${uploadMessage.type === 'success' ? '#86efac' : '#fca5a5'}`, color: uploadMessage.type === 'success' ? '#15803d' : '#dc2626', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
@@ -234,20 +237,28 @@ export default function DocumentsPage() {
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
               <div style={{ background: '#fff', borderRadius: '12px', padding: '28px', width: '100%', maxWidth: '440px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
                 <h2 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: '0 0 6px' }}>Add Document Details</h2>
-                <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 20px' }}>
+                <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 16px' }}>
                   {getFileIcon(pendingFile.type)} {pendingFile.name} · {formatFileSize(pendingFile.size)}
                 </p>
+
+                {/* Warning inside modal */}
+                <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                  <span style={{ fontSize: '13px', flexShrink: 0 }}>⚠️</span>
+                  <p style={{ margin: 0, color: '#991b1b', fontSize: '12px', lineHeight: '1.5' }}>
+                    Do not upload DD214s, medical records, or documents with SSNs or health information.
+                  </p>
+                </div>
 
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', color: '#374151', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>Document Label</label>
                   <input value={uploadForm.label} onChange={e => setUploadForm(prev => ({ ...prev, label: e.target.value }))}
-                    placeholder="e.g. DD214 Copy 1, 2024 Medical Records"
+                    placeholder="e.g. PCS Orders 2024, BAH Approval Letter"
                     style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', backgroundColor: '#f9fafb', color: '#111', fontSize: '14px', boxSizing: 'border-box' }} />
                 </div>
 
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', color: '#374151', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>Category</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                     {CATEGORIES.filter(c => c !== 'All').map(cat => {
                       const cc = getCategoryColor(cat)
                       const isSelected = uploadForm.category === cat
@@ -340,7 +351,7 @@ export default function DocumentsPage() {
                 {filter === 'All' ? 'No documents yet' : `No ${filter} documents`}
               </p>
               <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 20px' }}>
-                {filter === 'All' ? 'Upload your DD214, medical records, orders, and more.' : `Upload a document and tag it as ${filter}.`}
+                {filter === 'All' ? 'Upload your orders, housing documents, legal paperwork, and more.' : `Upload a document and tag it as ${filter}.`}
               </p>
               <button onClick={() => fileInputRef.current?.click()}
                 style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
