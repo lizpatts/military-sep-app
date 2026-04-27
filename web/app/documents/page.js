@@ -366,7 +366,7 @@ export default function DocumentsPage() {
                   <div key={doc.id} style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px', cursor: 'pointer', transition: 'border-color 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = '#2563eb'}
                     onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: cc.bg, border: `1px solid ${cc.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
                           {getFileIcon(doc.file_type)}
