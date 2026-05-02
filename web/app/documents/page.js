@@ -197,7 +197,7 @@ export default function DocumentsPage() {
       <div style={{ marginLeft: '220px', flex: 1 }}>
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px' }}>
           <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>Documents Vault</h1>
-          <p style={{ color: '#6b7280', fontSize: '12px', margin: '2px 0 0' }}>Store and access your important military documents</p>
+          <p style={{ color: '#6b7280', fontSize: '12px', margin: '2px 0 0' }}>Store and organize your important documents — PCS orders, leases, insurance cards, and more</p>
         </div>
         <div style={{ padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)' }}>
           <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '48px 40px', textAlign: 'center', maxWidth: '440px', width: '100%' }}>
@@ -254,6 +254,17 @@ export default function DocumentsPage() {
         </div>
 
         <div style={{ padding: '28px 32px' }}>
+
+          {/* DD-214 advisory notice */}
+          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+            <span style={{ fontSize: '16px', marginTop: '1px' }}>💡</span>
+            <p style={{ margin: 0, fontSize: '13px', color: '#92400e', lineHeight: '1.5' }}>
+              <strong>For sensitive government records</strong> like your DD-214, we recommend using official portals —{' '}
+              <a href="https://milconnect.dmdc.osd.mil" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>MilConnect</a>{' '}and{' '}
+              <a href="https://www.archives.gov/veterans/military-service-records" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>National Archives</a>.
+              This vault is designed for general documents like PCS orders, leases, and appointment records.
+            </p>
+          </div>
 
           {/* Security notice */}
           <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
