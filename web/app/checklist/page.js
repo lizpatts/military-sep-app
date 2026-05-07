@@ -35,9 +35,12 @@ export default function ChecklistPage() {
       setIsGuest(guestMode)
 
       if (guestMode) {
-        const { data: checklistItems } = await supabase
-          .from('checklist_items').select('*')
-          .order('days_before_separation', { ascending: false })
+let checklistQuery = supabase.from('checklist_items').select('*')
+if (!profileData?.is_guard_reserve) {
+  checklistQuery = checklistQuery.eq('is_guard_reserve', false)
+}
+const { data: checklistItems } = await checklistQuery
+  .order('days_before_separation', { ascending: false })
         setItems(checklistItems || [])
         setLoading(false)
         return
@@ -56,9 +59,10 @@ export default function ChecklistPage() {
         setIsUnderOneYear(daysLeft <= 365 && daysLeft > 0)
       }
 
-      const { data: checklistItems } = await supabase
-        .from('checklist_items').select('*')
-        .order('days_before_separation', { ascending: false })
+const { data: checklistItems } = await supabase
+  .from('checklist_items').select('*')
+  .eq('is_guard_reserve', false)
+  .order('days_before_separation', { ascending: false })
       const { data: customItems } = await supabase
         .from('user_custom_tasks').select('*').eq('user_id', session.user.id)
       const { data: progressData } = await supabase
