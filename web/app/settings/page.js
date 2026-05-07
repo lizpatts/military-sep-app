@@ -21,7 +21,11 @@ export default function SettingsPage() {
     phone_number: '',
     notify_push: false,
     notify_email: false,
-    notify_sms: false
+    notify_sms: false,
+    is_guard_reserve: false,
+    guard_reserve_timing: '',
+    guard_reserve_start_date: '',
+    guard_reserve_unit: '',
   })
 
   const branches = ['Army', 'Navy', 'Marine Corps', 'Air Force', 'Space Force', 'Coast Guard']
@@ -50,7 +54,11 @@ export default function SettingsPage() {
           phone_number: profileData.phone_number || '',
           notify_push: profileData.notify_push || false,
           notify_email: profileData.notify_email || false,
-          notify_sms: profileData.notify_sms || false
+          notify_sms: profileData.notify_sms || false,
+          is_guard_reserve: profileData.is_guard_reserve || false,
+          guard_reserve_timing: profileData.guard_reserve_timing || '',
+          guard_reserve_start_date: profileData.guard_reserve_start_date || '',
+          guard_reserve_unit: profileData.guard_reserve_unit || '',
         })
       }
       setLoading(false)
@@ -85,7 +93,11 @@ export default function SettingsPage() {
       phone_number: formData.phone_number,
       notify_push: formData.notify_push,
       notify_email: formData.notify_email,
-      notify_sms: formData.notify_sms
+      notify_sms: formData.notify_sms,
+      is_guard_reserve: formData.is_guard_reserve,
+      guard_reserve_timing: formData.guard_reserve_timing || null,
+      guard_reserve_start_date: formData.guard_reserve_start_date || null,
+      guard_reserve_unit: formData.guard_reserve_unit || null,
     }).eq('id', user.id)
     if (error) { alert('Error saving: ' + error.message); setSaving(false); return }
     setProfile({ ...profile, ...formData })
@@ -105,6 +117,8 @@ export default function SettingsPage() {
       Loading settings...
     </div>
   )
+
+  const accentColor = '#2563eb'
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
@@ -159,6 +173,81 @@ export default function SettingsPage() {
                 <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '4px' }}>Used for SMS reminders (coming soon)</p>
               </div>
             </div>
+          </div>
+
+          {/* Guard/Reserve card */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: formData.is_guard_reserve ? '20px' : '0' }}>
+              <div>
+                <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#111', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                  🎖️ Guard / Reserve
+                </h2>
+                <p style={{ color: '#6b7280', fontSize: '12px', margin: 0 }}>Adds Guard/Reserve-specific checklist items to your transition plan</p>
+              </div>
+              <div
+                onClick={() => setFormData(prev => ({ ...prev, is_guard_reserve: !prev.is_guard_reserve }))}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px', cursor: 'pointer', flexShrink: 0, marginLeft: '16px',
+                  backgroundColor: formData.is_guard_reserve ? '#2563eb' : '#e5e7eb',
+                  position: 'relative', transition: '0.2s'
+                }}>
+                <div style={{
+                  position: 'absolute', width: '18px', height: '18px', borderRadius: '50%',
+                  backgroundColor: 'white', top: '3px',
+                  left: formData.is_guard_reserve ? '23px' : '3px',
+                  transition: '0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </div>
+            </div>
+
+            {formData.is_guard_reserve && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '4px', borderTop: '1px solid #f3f4f6' }}>
+
+                <div>
+                  <label style={labelStyle}>Timing</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      { value: 'immediate', label: '⚡ Going straight in', desc: 'Reporting to my unit immediately after separation' },
+                      { value: 'gap', label: '📅 Taking a break first', desc: 'Planning to join Guard/Reserve but not immediately' },
+                    ].map(opt => (
+                      <div key={opt.value}
+                        onClick={() => setFormData(prev => ({ ...prev, guard_reserve_timing: opt.value }))}
+                        style={{
+                          padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+                          border: `2px solid ${formData.guard_reserve_timing === opt.value ? accentColor : '#e5e7eb'}`,
+                          backgroundColor: formData.guard_reserve_timing === opt.value ? '#eff6ff' : '#fff',
+                        }}>
+                        <p style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: formData.guard_reserve_timing === opt.value ? accentColor : '#111' }}>{opt.label}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#6b7280' }}>{opt.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Unit (optional)</label>
+                  <input
+                    value={formData.guard_reserve_unit}
+                    onChange={e => setFormData(prev => ({ ...prev, guard_reserve_unit: e.target.value }))}
+                    placeholder="e.g. 1st Battalion, 123rd Infantry, Texas ARNG"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>
+                    {formData.guard_reserve_timing === 'immediate' ? 'First Drill Date (estimate)' : 'Planned Start Date (estimate)'}
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.guard_reserve_start_date}
+                    onChange={e => setFormData(prev => ({ ...prev, guard_reserve_start_date: e.target.value }))}
+                    style={inputStyle}
+                  />
+                  <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '4px' }}>Approximate is fine.</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Notifications card */}
