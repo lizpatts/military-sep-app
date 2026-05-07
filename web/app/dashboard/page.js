@@ -179,8 +179,7 @@ function DashboardPage() {
       <PageContent>
 
         {/* Topbar */}
-        <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
+<div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>          <div>
             <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>
               Good morning, {firstName} 👋
             </h1>
@@ -300,7 +299,7 @@ function DashboardPage() {
           </div>
 
           {/* Quick nav cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', marginBottom: '24px' }}></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '24px' }}>
             {[
               { label: 'SkillBridge', icon: '🗺️', path: '/skillbridge', sub: 'Find opportunities' },
               { label: 'Certifications', icon: '📜', path: '/certifications', sub: 'Browse & favorite' },
