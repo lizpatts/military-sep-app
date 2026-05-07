@@ -30,8 +30,9 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
   const [profile, setProfile] = useState(null)
   const [daysRemaining, setDaysRemaining] = useState(null)
   const [timeProgress, setTimeProgress] = useState(0)
-  const [isMobile, setIsMobile] = useState(false)
-  const [isOpen, setIsOpen] = useState(false)
+const [isMobile, setIsMobile] = useState(false)
+const [isOpen, setIsOpen] = useState(false)
+const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768)
