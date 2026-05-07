@@ -30,6 +30,20 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
   const [profile, setProfile] = useState(null)
   const [daysRemaining, setDaysRemaining] = useState(null)
   const [timeProgress, setTimeProgress] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setIsOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     const load = async () => {
@@ -67,15 +81,15 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
     } else {
       router.push(path)
     }
+    if (isMobile) setIsOpen(false)
   }
 
   const isActive = (path) => pathname === path
 
-  // Header ~107px, countdown ~116px when visible, padding ~16px
   const countdownHeight = (!isGuest && daysRemaining !== null) ? 100 : 0
   const navMaxHeight = `calc(100vh - 107px - ${countdownHeight}px)`
 
-  return (
+  const sidebarContent = (
     <div style={{
       width: '220px',
       height: '100vh',
@@ -86,24 +100,34 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
       flexShrink: 0,
       position: 'fixed',
       top: 0,
-      left: 0,
+      left: isMobile ? (isOpen ? 0 : '-220px') : 0,
       bottom: 0,
-      zIndex: 100,
+      zIndex: 200,
       overflow: 'hidden',
+      transition: 'left 0.25s ease',
     }}>
-
       {/* Branch color strip */}
       <div style={{ height: '3px', backgroundColor: bc.color, flexShrink: 0 }} />
 
       {/* Logo + branch tag */}
       <div style={{ padding: '12px 16px 8px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '8px',
-            backgroundColor: bc.color, display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: '16px'
-          }}>🎖️</div>
-          <span style={{ fontWeight: '700', fontSize: '15px', color: '#111', letterSpacing: '-0.3px' }}>MilSep</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              backgroundColor: bc.color, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: '16px'
+            }}>🎖️</div>
+            <span style={{ fontWeight: '700', fontSize: '15px', color: '#111', letterSpacing: '-0.3px' }}>MilSep</span>
+          </div>
+          {/* Close button on mobile */}
+          {isMobile && (
+            <div onClick={() => setIsOpen(false)} style={{
+              width: '28px', height: '28px', borderRadius: '6px',
+              backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', cursor: 'pointer', fontSize: '16px', color: '#6b7280'
+            }}>✕</div>
+          )}
         </div>
         {branch && (
           <>
@@ -123,7 +147,7 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
 
       <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '0 16px', flexShrink: 0 }} />
 
-      {/* Nav — scrollable, takes all remaining space above the countdown */}
+      {/* Nav */}
       <nav style={{
         padding: '8px',
         overflowY: 'auto',
@@ -150,71 +174,82 @@ export default function Sidebar({ isGuest = false, guestBranch = '', guestSepTyp
           </div>
         ))}
 
-        {/* Content section */}
         <div style={{
           color: '#9ca3af', fontSize: '10px', fontWeight: '600',
           letterSpacing: '0.8px', padding: '8px 10px 4px', textTransform: 'uppercase'
         }}>Content</div>
-        <div
-          onClick={() => nav('/blog')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px',
-            borderRadius: '6px', cursor: 'pointer', marginBottom: '2px',
-            backgroundColor: isActive('/blog') ? bc.light : 'transparent',
-            borderLeft: isActive('/blog') ? `3px solid ${bc.color}` : '3px solid transparent',
-            color: isActive('/blog') ? bc.text : '#6b7280',
-            fontWeight: isActive('/blog') ? '600' : '400', fontSize: '13px',
-          }}
-        >
+        <div onClick={() => nav('/blog')} style={{
+          display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px',
+          borderRadius: '6px', cursor: 'pointer', marginBottom: '2px',
+          backgroundColor: isActive('/blog') ? bc.light : 'transparent',
+          borderLeft: isActive('/blog') ? `3px solid ${bc.color}` : '3px solid transparent',
+          color: isActive('/blog') ? bc.text : '#6b7280',
+          fontWeight: isActive('/blog') ? '600' : '400', fontSize: '13px',
+        }}>
           <span>📰</span> Blog
         </div>
 
-        {/* Account section */}
         <div style={{
           color: '#9ca3af', fontSize: '10px', fontWeight: '600',
           letterSpacing: '0.8px', padding: '12px 10px 4px', textTransform: 'uppercase'
         }}>Account</div>
-        <div
-          onClick={() => nav('/settings')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px',
-            borderRadius: '6px', cursor: 'pointer',
-            backgroundColor: isActive('/settings') ? bc.light : 'transparent',
-            borderLeft: isActive('/settings') ? `3px solid ${bc.color}` : '3px solid transparent',
-            color: isActive('/settings') ? bc.text : '#6b7280',
-            fontWeight: isActive('/settings') ? '600' : '400', fontSize: '13px',
-            opacity: isGuest ? 0.4 : 1,
-          }}
-        >
+        <div onClick={() => nav('/settings')} style={{
+          display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px',
+          borderRadius: '6px', cursor: 'pointer',
+          backgroundColor: isActive('/settings') ? bc.light : 'transparent',
+          borderLeft: isActive('/settings') ? `3px solid ${bc.color}` : '3px solid transparent',
+          color: isActive('/settings') ? bc.text : '#6b7280',
+          fontWeight: isActive('/settings') ? '600' : '400', fontSize: '13px',
+          opacity: isGuest ? 0.4 : 1,
+        }}>
           <span>⚙️</span> Settings
         </div>
       </nav>
 
-      {/* Separation countdown — pinned to bottom, never scrolls away */}
+      {/* Countdown */}
       {!isGuest && daysRemaining !== null && (
         <div style={{
-          margin: '0 12px 16px',
-          backgroundColor: '#f9fafb',
-          border: '1px solid #e5e7eb',
-          borderRadius: '10px',
-          padding: '12px',
-          textAlign: 'center',
-          flexShrink: 0,
+          margin: '0 12px 16px', backgroundColor: '#f9fafb',
+          border: '1px solid #e5e7eb', borderRadius: '10px',
+          padding: '12px', textAlign: 'center', flexShrink: 0,
         }}>
-          <p style={{
-            color: '#9ca3af', fontSize: '10px', fontWeight: '600',
-            letterSpacing: '0.6px', margin: '0 0 4px', textTransform: 'uppercase'
-          }}>Days to Separation</p>
-          <p style={{ color: bc.color, fontSize: '28px', fontWeight: '700', margin: '0 0 6px', letterSpacing: '-1px' }}>
-            {daysRemaining}
-          </p>
+          <p style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '600', letterSpacing: '0.6px', margin: '0 0 4px', textTransform: 'uppercase' }}>Days to Separation</p>
+          <p style={{ color: bc.color, fontSize: '28px', fontWeight: '700', margin: '0 0 6px', letterSpacing: '-1px' }}>{daysRemaining}</p>
           <div style={{ height: '3px', backgroundColor: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${timeProgress}%`, backgroundColor: bc.color, borderRadius: '2px' }} />
           </div>
           <p style={{ color: '#9ca3af', fontSize: '10px', margin: '4px 0 0' }}>{timeProgress}% elapsed</p>
         </div>
       )}
-
     </div>
+  )
+
+  return (
+    <>
+      {sidebarContent}
+
+      {/* Mobile overlay — darkens background when sidebar is open */}
+      {isMobile && isOpen && (
+        <div onClick={() => setIsOpen(false)} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 199
+        }} />
+      )}
+
+      {/* Mobile hamburger button — fixed top left when sidebar is closed */}
+      {isMobile && !isOpen && (
+        <div onClick={() => setIsOpen(true)} style={{
+          position: 'fixed', top: '12px', left: '12px', zIndex: 150,
+          width: '40px', height: '40px', borderRadius: '10px',
+          backgroundColor: bc.color, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '5px',
+          cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+        }}>
+          <div style={{ width: '18px', height: '2px', backgroundColor: '#fff', borderRadius: '1px' }} />
+          <div style={{ width: '18px', height: '2px', backgroundColor: '#fff', borderRadius: '1px' }} />
+          <div style={{ width: '18px', height: '2px', backgroundColor: '#fff', borderRadius: '1px' }} />
+        </div>
+      )}
+    </>
   )
 }
