@@ -17,6 +17,88 @@ const BRANCH_CONFIG = {
 
 const DEFAULT_BRANCH = { color: '#2563eb', light: '#eff6ff', badge: '#dbeafe', text: '#1d4ed8', symbol: '🎖️', motto: 'Your transition starts here' }
 
+function formatICSDate(date) {
+  return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+}
+
+function generateICS(separationDate, firstName, branch) {
+  const sepDate = new Date(separationDate)
+  sepDate.setHours(9, 0, 0, 0)
+
+  const addDays = (date, days) => {
+    const d = new Date(date)
+    d.setDate(d.getDate() + days)
+    return d
+  }
+
+  const events = [
+    {
+      date: sepDate,
+      title: `🎖️ MilSep — ${firstName}'s Separation Date`,
+      description: `Your military separation date. Congratulations on your service. Visit MilSep for post-separation resources: https://military-sep-app.vercel.app`,
+    },
+    {
+      date: addDays(sepDate, -365),
+      title: `MilSep — 1 Year to Separation (${branch})`,
+      description: `1 year until separation. Start your checklist now at https://military-sep-app.vercel.app/checklist — schedule your separation physical, meet with a VSO, and research SkillBridge opportunities.`,
+    },
+    {
+      date: addDays(sepDate, -180),
+      title: `MilSep — 6 Months to Separation`,
+      description: `6 months until separation. File your VA disability claim, start your SkillBridge application, and update your resume. https://military-sep-app.vercel.app/checklist`,
+    },
+    {
+      date: addDays(sepDate, -90),
+      title: `MilSep — 90 Days to Separation`,
+      description: `90 days until separation — the final sprint. Confirm your DD214 info, finalize housing, and plan terminal leave. https://military-sep-app.vercel.app/checklist`,
+    },
+    {
+      date: addDays(sepDate, -30),
+      title: `MilSep — 30 Days to Separation`,
+      description: `30 days until separation. Pick up certified copies of your DD214, update your address, and confirm your VA claim is submitted. https://military-sep-app.vercel.app/checklist`,
+    },
+    {
+      date: addDays(sepDate, -7),
+      title: `MilSep — 1 Week to Separation`,
+      description: `One week to go. Review your final checklist items and make sure everything is in order. https://military-sep-app.vercel.app/checklist`,
+    },
+  ]
+
+  // Only include future events
+  const now = new Date()
+  const futureEvents = events.filter(e => e.date > now)
+
+  const uid = () => Math.random().toString(36).substring(2) + Date.now()
+  const stamp = formatICSDate(new Date())
+
+  const eventBlocks = futureEvents.map(e => {
+    const start = formatICSDate(e.date)
+    const end = formatICSDate(new Date(e.date.getTime() + 60 * 60 * 1000))
+    return [
+      'BEGIN:VEVENT',
+      `UID:${uid()}@milsep`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART:${start}`,
+      `DTEND:${end}`,
+      `SUMMARY:${e.title}`,
+      `DESCRIPTION:${e.description.replace(/\n/g, '\\n')}`,
+      'END:VEVENT',
+    ].join('\r\n')
+  }).join('\r\n')
+
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//MilSep//Military Separation Guide//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:MilSep Separation Milestones',
+    'X-WR-CALDESC:Key separation milestones from MilSep',
+    eventBlocks,
+    'END:VCALENDAR',
+  ].join('\r\n')
+}
+
 function DashboardPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -33,6 +115,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [deadlines, setDeadlines] = useState([])
   const [vaScenario, setVaScenario] = useState(null)
+  const [calendarAdded, setCalendarAdded] = useState(false)
 
   const loadProfile = useCallback(async () => {
     const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
@@ -131,6 +214,21 @@ function DashboardPage() {
     return () => window.removeEventListener('focus', handleFocus)
   }, [loadProfile, isGuest])
 
+  const handleAddToCalendar = () => {
+    if (!profile?.separation_date) return
+    const firstName = profile?.full_name?.split(' ')[0] || 'Service Member'
+    const icsContent = generateICS(profile.separation_date, firstName, profile.branch || 'Military')
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'MilSep_Separation_Milestones.ics'
+    a.click()
+    URL.revokeObjectURL(url)
+    setCalendarAdded(true)
+    setTimeout(() => setCalendarAdded(false), 3000)
+  }
+
   const timeProgress = totalDays && daysRemaining
     ? Math.max(0, Math.round(((totalDays - daysRemaining) / totalDays) * 100))
     : 0
@@ -175,17 +273,29 @@ function DashboardPage() {
 
       <Sidebar isGuest={isGuest} guestBranch={guestBranch} guestSepType={guestSepType} />
 
-      {/* Main content */}
       <PageContent>
 
         {/* Topbar */}
-<div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>          <div>
+        <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div>
             <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>
               Good morning, {firstName} 👋
             </h1>
             <p style={{ color: '#6b7280', fontSize: '12px', margin: 0 }}>{profile?.branch} — {profile?.separation_type}</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {!isGuest && profile?.separation_date && (
+              <button onClick={handleAddToCalendar} style={{
+                backgroundColor: calendarAdded ? '#f0fdf4' : '#f9fafb',
+                color: calendarAdded ? '#15803d' : '#6b7280',
+                border: `1px solid ${calendarAdded ? '#86efac' : '#e5e7eb'}`,
+                borderRadius: '8px', padding: '6px 12px',
+                fontSize: '12px', fontWeight: '500', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '5px'
+              }}>
+                {calendarAdded ? '✓ Added!' : '📅 Add to Calendar'}
+              </button>
+            )}
             {!isGuest && daysRemaining !== null && (
               <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', color: '#6b7280' }}>
                 Separating in <span style={{ color: branchConfig.color, fontWeight: '700' }}>{daysRemaining} days</span>
@@ -238,8 +348,8 @@ function DashboardPage() {
           )}
 
           {/* Stat cards */}
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-            {/* Checklist progress — always green */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+
             <div onClick={() => !isGuest && router.push('/checklist')}
               style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
               onMouseEnter={e => { if (!isGuest) e.currentTarget.style.borderColor = '#22c55e' }}
@@ -257,7 +367,6 @@ function DashboardPage() {
               <p style={{ color: '#9ca3af', fontSize: '11px', margin: '6px 0 0' }}>{isGuest ? 'Sign in to track' : `${progress}% complete`}</p>
             </div>
 
-            {/* Tasks completed */}
             <div onClick={() => !isGuest && router.push('/checklist')}
               style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
               onMouseEnter={e => { if (!isGuest) e.currentTarget.style.borderColor = '#f59e0b' }}
@@ -282,7 +391,6 @@ function DashboardPage() {
               <p style={{ color: '#9ca3af', fontSize: '11px', margin: '6px 0 0' }}>{isGuest ? 'Sign in to track' : `${timeProgress}% of timeline elapsed`}</p>
             </div>
 
-            {/* VA Disability — always blue, only if saved scenario */}
             {vaScenario && (
               <div style={{ backgroundColor: '#fff', border: '1px solid #2563eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', backgroundColor: '#2563eb' }} />
@@ -298,7 +406,8 @@ function DashboardPage() {
           </div>
 
           {/* Quick nav cards */}
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '24px' }}>            {[
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '24px' }}>
+            {[
               { label: 'SkillBridge', icon: '🗺️', path: '/skillbridge', sub: 'Find opportunities' },
               { label: 'Certifications', icon: '📜', path: '/certifications', sub: 'Browse & favorite' },
               { label: 'Calculators', icon: '💰', path: '/calculators', sub: 'TSP · GI Bill · VA' },
