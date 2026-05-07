@@ -197,7 +197,7 @@ function DashboardPage() {
           </div>
         </div>
 
-        <div style={{ padding: '28px 32px' }}>
+        <div style={{ padding: '16px' }}>
 
           {/* Guest banner */}
           {isGuest && (
@@ -238,8 +238,7 @@ function DashboardPage() {
           )}
 
           {/* Stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: vaScenario ? '1fr 1fr 1fr' : '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
             {/* Checklist progress — always green */}
             <div onClick={() => !isGuest && router.push('/checklist')}
               style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: isGuest ? 'default' : 'pointer' }}
@@ -299,8 +298,7 @@ function DashboardPage() {
           </div>
 
           {/* Quick nav cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', marginBottom: '24px' }}></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '24px' }}>
-            {[
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '24px' }}>            {[
               { label: 'SkillBridge', icon: '🗺️', path: '/skillbridge', sub: 'Find opportunities' },
               { label: 'Certifications', icon: '📜', path: '/certifications', sub: 'Browse & favorite' },
               { label: 'Calculators', icon: '💰', path: '/calculators', sub: 'TSP · GI Bill · VA' },
