@@ -6,6 +6,8 @@ import { supabase } from '../../lib/supabase'
 import Sidebar from '../components/Sidebar'
 import PageContent from '../components/PageContent'
 
+const APP_URL = 'https://military-sep-app.vercel.app'
+
 export default function SkillBridgePage() {
   const router = useRouter()
   const mapRef = useRef(null)
@@ -25,6 +27,10 @@ export default function SkillBridgePage() {
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitMessage, setSubmitMessage] = useState(null)
   const [isGuest, setIsGuest] = useState(false)
+  const [highlightId, setHighlightId] = useState(null)
+const [copiedId, setCopiedId] = useState(null)
+const highlightRef = useRef(null)
+
   const [form, setForm] = useState({
     employer_name: '', industry: 'Technology', city: '', state: '',
     duration_weeks: '12', url: '', description: '', notes: '',
@@ -46,6 +52,10 @@ export default function SkillBridgePage() {
     const loadData = async () => {
       const params = new URLSearchParams(window.location.search)
       setIsGuest(params.get('guest') === 'true')
+
+
+const hid = params.get('highlight')
+if (hid) setHighlightId(hid)
 
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
@@ -222,6 +232,18 @@ export default function SkillBridgePage() {
     const marker = markersRef.current[loc.id]
     if (marker) openInfoWindow(loc, marker, favorites)
   }
+
+const handleShare = (loc) => {
+  const url = `${APP_URL}/skillbridge?guest=true&highlight=${loc.id}`
+  const text = `Check out this SkillBridge opportunity on MilSep: ${loc.employer_name} in ${loc.city}, ${loc.state}`
+  if (navigator.share) {
+    navigator.share({ title: `MilSep — ${loc.employer_name}`, text, url })
+  } else {
+    navigator.clipboard.writeText(url)
+    setCopiedId(loc.id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+}
 
   const handleSubmit = async () => {
     if (!user) { alert('Please sign in to submit a location'); return }

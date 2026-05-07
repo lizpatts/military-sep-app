@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Sidebar from '../components/Sidebar'
 import PageContent from '../components/PageContent'
+
+const APP_URL = 'https://military-sep-app.vercel.app'
 
 export default function CertificationsPage() {
   const router = useRouter()
@@ -16,6 +18,9 @@ export default function CertificationsPage() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
   const [isGuest, setIsGuest] = useState(false)
+  const [highlightId, setHighlightId] = useState(null)
+  const [copiedId, setCopiedId] = useState(null)
+  const highlightRef = useRef(null)
 
   const categories = ['All', 'IT', 'Leadership', 'Trade', 'Healthcare', 'Finance', 'Education']
   const costFilters = ['All', 'Free', 'Reduced Cost', 'Paid']
@@ -25,6 +30,8 @@ export default function CertificationsPage() {
       const params = new URLSearchParams(window.location.search)
       const guestMode = params.get('guest') === 'true'
       setIsGuest(guestMode)
+      const hid = params.get('highlight')
+      if (hid) setHighlightId(hid)
 
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
@@ -43,6 +50,15 @@ export default function CertificationsPage() {
     loadData()
   }, [])
 
+  // Scroll to highlighted cert after load
+  useEffect(() => {
+    if (highlightId && highlightRef.current) {
+      setTimeout(() => {
+        highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 500)
+    }
+  }, [highlightId, loading])
+
   const toggleFavorite = async (certId) => {
     if (isGuest) { alert('Sign in to save favorites!'); return }
     if (!user) { alert('Please sign in to save favorites'); return }
@@ -52,6 +68,18 @@ export default function CertificationsPage() {
       await supabase.from('cert_favorites').delete().eq('user_id', user.id).eq('cert_id', certId)
     } else {
       await supabase.from('cert_favorites').insert({ user_id: user.id, cert_id: certId })
+    }
+  }
+
+  const handleShare = (cert) => {
+    const url = `${APP_URL}/certifications?guest=true&highlight=${cert.id}`
+    const text = `Check out this certification on MilSep: ${cert.name} by ${cert.provider}`
+    if (navigator.share) {
+      navigator.share({ title: `MilSep — ${cert.name}`, text, url })
+    } else {
+      navigator.clipboard.writeText(url)
+      setCopiedId(cert.id)
+      setTimeout(() => setCopiedId(null), 2000)
     }
   }
 
@@ -65,9 +93,15 @@ export default function CertificationsPage() {
     return matchesCategory && matchesCost && matchesSearch
   })
 
-  const favoritedCerts = filteredCerts.filter(c => favorites[c.id])
-  const otherCerts = filteredCerts.filter(c => !favorites[c.id])
-  const displayCerts = [...favoritedCerts, ...otherCerts]
+  // Put highlighted cert first if it exists
+  const highlightedCert = highlightId ? certs.find(c => c.id === highlightId) : null
+  const favoritedCerts = filteredCerts.filter(c => favorites[c.id] && c.id !== highlightId)
+  const otherCerts = filteredCerts.filter(c => !favorites[c.id] && c.id !== highlightId)
+  const displayCerts = [
+    ...(highlightedCert ? [highlightedCert] : []),
+    ...favoritedCerts,
+    ...otherCerts
+  ]
 
   const costColor = (type) => {
     if (type === 'Free') return { bg: '#f0fdf4', border: '#86efac', text: '#15803d' }
@@ -102,8 +136,24 @@ export default function CertificationsPage() {
 
         <div style={{ padding: '28px 32px' }}>
 
+          {/* Shared cert banner */}
+          {highlightId && highlightedCert && (
+            <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>🎖️</span>
+                <div>
+                  <p style={{ margin: 0, fontWeight: '600', color: '#1d4ed8', fontSize: '13px' }}>Shared via MilSep</p>
+                  <p style={{ margin: 0, color: '#6b7280', fontSize: '12px' }}>Someone shared <strong>{highlightedCert.name}</strong> with you. Sign up free to save favorites and track your transition.</p>
+                </div>
+              </div>
+              <button onClick={() => router.push('/login')} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                Sign Up Free →
+              </button>
+            </div>
+          )}
+
           {/* Guest banner */}
-          {isGuest && (
+          {isGuest && !highlightId && (
             <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span>👋</span>
@@ -160,26 +210,27 @@ export default function CertificationsPage() {
               displayCerts.map(cert => {
                 const isFav = favorites[cert.id]
                 const cc = costColor(cert.cost_type)
+                const isHighlighted = cert.id === highlightId
                 return (
-                  <div key={cert.id} style={{
-                    backgroundColor: '#fff',
-                    border: `1px solid ${isFav ? '#fcd34d' : '#e5e7eb'}`,
-                    borderLeft: `4px solid ${isFav ? '#f59e0b' : '#e5e7eb'}`,
-                    borderRadius: '10px', padding: '18px',
-                    transition: 'border-color 0.15s'
-                  }}>
+                  <div
+                    key={cert.id}
+                    ref={isHighlighted ? highlightRef : null}
+                    style={{
+                      backgroundColor: '#fff',
+                      border: `1px solid ${isHighlighted ? '#2563eb' : isFav ? '#fcd34d' : '#e5e7eb'}`,
+                      borderLeft: `4px solid ${isHighlighted ? '#2563eb' : isFav ? '#f59e0b' : '#e5e7eb'}`,
+                      borderRadius: '10px', padding: '18px',
+                      transition: 'border-color 0.15s',
+                      boxShadow: isHighlighted ? '0 0 0 3px #dbeafe' : 'none'
+                    }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                       <div style={{ flex: 1 }}>
-                        {/* Name + favorited */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                           <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#111' }}>{cert.name}</h3>
                           {isFav && <span style={{ fontSize: '11px', color: '#d97706', fontWeight: '600' }}>★ Favorited</span>}
+                          {isHighlighted && <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: '600', backgroundColor: '#eff6ff', padding: '1px 8px', borderRadius: '10px', border: '1px solid #bfdbfe' }}>Shared with you</span>}
                         </div>
-
-                        {/* Provider */}
                         <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 10px' }}>{cert.provider}</p>
-
-                        {/* Tags */}
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
                           <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: cc.bg, border: `1px solid ${cc.border}`, color: cc.text, fontWeight: '600' }}>
                             {cert.cost_type || 'Free'}
@@ -200,22 +251,29 @@ export default function CertificationsPage() {
                             </span>
                           )}
                         </div>
-
                         {cert.description && (
                           <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 8px', lineHeight: '1.5' }}>{cert.description}</p>
                         )}
                         {cert.civilian_value && (
                           <p style={{ color: '#9ca3af', fontSize: '12px', margin: '0 0 8px' }}>💼 {cert.civilian_value}</p>
                         )}
-                        {cert.link && (
-                          <a href={cert.link} target="_blank" rel="noopener noreferrer"
-                            style={{ color: '#2563eb', fontSize: '13px', textDecoration: 'none', fontWeight: '500' }}>
-                            Learn more →
-                          </a>
-                        )}
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
+                          {cert.link && (
+                            <a href={cert.link} target="_blank" rel="noopener noreferrer"
+                              style={{ color: '#2563eb', fontSize: '13px', textDecoration: 'none', fontWeight: '500' }}>
+                              Learn more →
+                            </a>
+                          )}
+                          <button onClick={() => handleShare(cert)} style={{
+                            backgroundColor: copiedId === cert.id ? '#f0fdf4' : '#f9fafb',
+                            border: `1px solid ${copiedId === cert.id ? '#86efac' : '#e5e7eb'}`,
+                            color: copiedId === cert.id ? '#15803d' : '#6b7280',
+                            borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer'
+                          }}>
+                            {copiedId === cert.id ? '✓ Link copied!' : '↗ Share'}
+                          </button>
+                        </div>
                       </div>
-
-                      {/* Favorite button */}
                       <button onClick={() => toggleFavorite(cert.id)} style={{
                         backgroundColor: isFav ? '#fffbeb' : '#f9fafb',
                         border: `1px solid ${isFav ? '#fcd34d' : '#e5e7eb'}`,
@@ -232,7 +290,6 @@ export default function CertificationsPage() {
               })
             )}
           </div>
-
         </div>
       </PageContent>
     </div>
