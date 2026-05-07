@@ -24,6 +24,7 @@ export default function ChecklistPage() {
   const [isGuest, setIsGuest] = useState(false)
   const [showAllItems, setShowAllItems] = useState(false)
   const [isUnderOneYear, setIsUnderOneYear] = useState(false)
+  const [search, setSearch] = useState('')
 
   const categories = ['All', 'Medical', 'Finance', 'Housing', 'Legal', 'Career', 'Personal']
 
@@ -134,10 +135,11 @@ export default function ChecklistPage() {
     }
   }
 
-  const filteredItems = items.filter(item => {
+const filteredItems = items.filter(item => {
     const isHidden = hidden[item.id] === true
     if (isHidden && !showHidden) return false
     if (filter !== 'All' && item.category !== filter) return false
+    if (search && !item.title?.toLowerCase().includes(search.toLowerCase()) && !item.description?.toLowerCase().includes(search.toLowerCase())) return false
     if (isUnderOneYear && !showAllItems && !item.isCustom) {
       if (item.priority !== 'high' && item.priority !== 'critical') return false
     }
@@ -230,6 +232,14 @@ export default function ChecklistPage() {
               <p style={{ color: '#9ca3af', fontSize: '12px', margin: 0 }}>{completedCount} of {totalCount} tasks completed</p>
             </div>
           )}
+
+
+
+{/* Search */}
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search checklist..."
+            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', backgroundColor: '#fff', color: '#111', fontSize: '14px', boxSizing: 'border-box', marginBottom: '12px', outline: 'none' }}
+          />
 
           {/* Filters */}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
