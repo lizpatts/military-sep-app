@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Sidebar from '../components/Sidebar'
+import PageContent from '../components/PageContent'
 
 const CATEGORIES = ['All', 'Legal', 'Finance', 'Housing', 'Orders', 'General']
 const MAX_DOCS = 10
@@ -194,7 +195,7 @@ export default function DocumentsPage() {
   if (isGuest) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
       <Sidebar isGuest={true} guestBranch={guestBranch} guestSepType={guestSepType} />
-      <div style={{ marginLeft: '220px', flex: 1 }}>
+      <PageContent>
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px' }}>
           <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>Documents Vault</h1>
           <p style={{ color: '#6b7280', fontSize: '12px', margin: '2px 0 0' }}>Store and organize your important documents — PCS orders, leases, insurance cards, and more</p>
@@ -227,14 +228,14 @@ export default function DocumentsPage() {
             </button>
           </div>
         </div>
-      </div>
+      </PageContent>
     </div>
   )
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
       <Sidebar />
-      <div style={{ marginLeft: '220px', flex: 1 }}>
+      <PageContent>
         {/* Topbar */}
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -431,7 +432,7 @@ export default function DocumentsPage() {
             </div>
           )}
         </div>
-      </div>
+      </PageContent>
     </div>
   )
 }

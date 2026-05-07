@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Sidebar from '../components/Sidebar'
+import PageContent from '../components/PageContent'
+
 
 export default function BlogPage() {
   const router = useRouter()
@@ -125,7 +127,7 @@ export default function BlogPage() {
         guestSepType={typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('separation_type') || '' : ''}
       />
 
-      <div style={{ marginLeft: '220px', flex: 1 }}>
+      <PageContent>
         {/* Topbar */}
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -229,7 +231,7 @@ export default function BlogPage() {
             </div>
           )}
         </div>
-      </div>
+      </PageContent>
 
       {/* Submission modal */}
       {showModal && (

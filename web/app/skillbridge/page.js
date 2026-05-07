@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Sidebar from '../components/Sidebar'
+import PageContent from '../components/PageContent'
 
 export default function SkillBridgePage() {
   const router = useRouter()
@@ -251,7 +252,7 @@ export default function SkillBridgePage() {
         guestSepType={typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('separation_type') || '' : ''}
       />
 
-      <div style={{ marginLeft: '220px', flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <PageContent>
 
         {/* Submit Form Modal */}
         {showSubmitForm && (
@@ -458,7 +459,7 @@ export default function SkillBridgePage() {
             )}
           </div>
         </div>
-      </div>
+      </PageContent>
     </div>
   )
 }

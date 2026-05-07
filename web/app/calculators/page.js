@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Sidebar from '../components/Sidebar'
+import PageContent from '../components/PageContent'
 
 const LinkTile = ({ label, url }) => (
   <div onClick={() => window.open(url, '_blank')} style={{
@@ -188,7 +189,7 @@ const giBillLinks = [
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
       <Sidebar />
-      <div style={{ marginLeft: '220px', flex: 1 }}>
+      <PageContent>
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px' }}>
           <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>Financial Calculators</h1>
           <p style={{ color: '#6b7280', fontSize: '12px', margin: '2px 0 0' }}>Estimates only — consult a financial advisor for personalized advice.</p>
@@ -433,7 +434,7 @@ const giBillLinks = [
           {activeTab === 'va' && <VADisabilityCalculator />}
 
         </div>
-      </div>
+      </PageContent>
     </div>
   )
 }

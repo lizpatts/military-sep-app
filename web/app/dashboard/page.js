@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Sidebar from '../components/Sidebar'
+import PageContent from '../components/PageContent'
 
 const BRANCH_CONFIG = {
   'Army':         { color: '#16a34a', light: '#f0fdf4', badge: '#dcfce7', text: '#15803d', symbol: '⚔️', motto: 'This We\'ll Defend' },
@@ -175,7 +176,7 @@ function DashboardPage() {
       <Sidebar isGuest={isGuest} guestBranch={guestBranch} guestSepType={guestSepType} />
 
       {/* Main content */}
-      <div style={{ marginLeft: '220px', flex: 1, minHeight: '100vh' }}>
+      <PageContent>
 
         {/* Topbar */}
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -369,7 +370,7 @@ function DashboardPage() {
           )}
 
         </div>
-      </div>
+      </PageContent>
     </div>
   )
 }
