@@ -338,12 +338,12 @@ export default function DocumentsPage() {
           {selectedDoc && previewUrl && (
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
               <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: '600', fontSize: '15px', color: '#111' }}>{selectedDoc.label}</p>
-                    <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>{selectedDoc.category} · {formatFileSize(selectedDoc.file_size)}</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+<div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+  <div style={{ minWidth: 0, flex: 1 }}>
+    <p style={{ margin: 0, fontWeight: '600', fontSize: '15px', color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedDoc.label}</p>
+    <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>{selectedDoc.category} · {formatFileSize(selectedDoc.file_size)}</p>
+  </div>
+  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                     <button onClick={() => handleDownload(selectedDoc)} style={{ backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Download</button>
                     <button onClick={() => handleShare(selectedDoc)} style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Share</button>
                     <button onClick={() => { setSelectedDoc(null); setPreviewUrl(null) }} style={{ backgroundColor: '#f9fafb', color: '#6b7280', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '6px 14px', cursor: 'pointer', fontSize: '13px' }}>Close</button>
