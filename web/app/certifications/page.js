@@ -23,7 +23,7 @@ export default function CertificationsPage() {
   const highlightRef = useRef(null)
 
   const categories = ['All', 'IT', 'Leadership', 'Trade', 'Healthcare', 'Finance', 'Education']
-  const costFilters = ['All', 'Free', 'Reduced Cost', 'Paid']
+const costFilters = ['All', 'Free', 'Reduced Cost', 'Out of Pocket']
 
   useEffect(() => {
     const loadData = async () => {
