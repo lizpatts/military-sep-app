@@ -117,6 +117,10 @@ function DashboardPage() {
   const [vaScenario, setVaScenario] = useState(null)
   const [calendarAdded, setCalendarAdded] = useState(false)
 
+const firstName = isGuest ? 'Guest' : profile?.full_name?.split(' ')[0]
+const [greeting, setGreeting] = useState('Good morning')
+
+
   const loadProfile = useCallback(async () => {
     const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
     const guestMode = params.get('guest') === 'true'
@@ -273,8 +277,6 @@ function DashboardPage() {
     </div>
   )
 
-const firstName = isGuest ? 'Guest' : profile?.full_name?.split(' ')[0]
-const [greeting, setGreeting] = useState('Good morning')
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
