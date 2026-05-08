@@ -20,6 +20,7 @@ export default function CertificationsPage() {
   const [isGuest, setIsGuest] = useState(false)
   const [highlightId, setHighlightId] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
+const [showInfo, setShowInfo] = useState(false)
   const highlightRef = useRef(null)
 
   const categories = ['All', 'IT', 'Leadership', 'Trade', 'Healthcare', 'Finance', 'Education']
@@ -103,7 +104,7 @@ const costFilters = ['All', 'Free', 'Reduced Cost', 'Out of Pocket']
     ...otherCerts
   ]
 
-  const costColor = (type) => {
+  const costColor = (type) => {v
     if (type === 'Free') return { bg: '#f0fdf4', border: '#86efac', text: '#15803d' }
     if (type === 'Reduced Cost') return { bg: '#fffbeb', border: '#fcd34d', text: '#92400e' }
     return { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626' }
@@ -126,10 +127,11 @@ const costFilters = ['All', 'Free', 'Reduced Cost', 'Out of Pocket']
         {/* Topbar */}
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>Certifications</h1>
-            <p style={{ color: '#6b7280', fontSize: '12px', margin: '2px 0 0' }}>Browse and favorite certifications relevant to your transition</p>
-          </div>
-          <div style={{ fontSize: '13px', color: '#9ca3af' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+  <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>Certifications</h1>
+  <button onClick={() => setShowInfo(true)} style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #9ca3af', background: 'none', color: '#9ca3af', fontSize: '11px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>i</button>
+</div>
+<p style={{ color: '#6b7280', fontSize: '12px', margin: '2px 0 0' }}>Browse and favorite certifications relevant to your transition</p>
             {displayCerts.length} found{favoritedCerts.length > 0 && ` · ${favoritedCerts.length} favorited`}
           </div>
         </div>
@@ -292,6 +294,32 @@ const costFilters = ['All', 'Free', 'Reduced Cost', 'Out of Pocket']
           </div>
         </div>
       </PageContent>
+{showInfo && (
+  <div onClick={() => setShowInfo(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+    <div onClick={e => e.stopPropagation()} style={{ backgroundColor: '#fff', borderRadius: '14px', padding: '24px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111' }}>Funding Types Explained</h2>
+        <button onClick={() => setShowInfo(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9ca3af', padding: 0, lineHeight: 1 }}>×</button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {[
+          { label: 'Military Funded', color: '#15803d', bg: '#f0fdf4', border: '#86efac', desc: 'Covered through your branch\'s COOL program or military education benefits while on active duty. Apply through your branch portal before you separate.' },
+          { label: 'Veteran Program', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff', desc: 'Free through civilian nonprofits and companies (like Fortinet, Splunk, USO) that specifically support veterans. Available before and after separation.' },
+          { label: 'Reduced Cost', color: '#92400e', bg: '#fffbeb', border: '#fcd34d', desc: 'Discounted from the standard civilian price through military partnerships, employer programs, or negotiated rates.' },
+          { label: 'Costs $', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', desc: 'Full out-of-pocket cost. May still be worth pursuing — some of these have high civilian earning potential.' },
+        ].map(({ label, color, bg, border, desc }) => (
+          <div key={label} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: bg, border: `1px solid ${border}`, color, fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>{label}</span>
+            <p style={{ margin: 0, fontSize: '13px', color: '#6b7280', lineHeight: '1.5' }}>{desc}</p>
+          </div>
+        ))}
+      </div>
+      <p style={{ margin: '16px 0 0', fontSize: '11px', color: '#9ca3af', textAlign: 'center' }}>Tap outside to close</p>
+    </div>
+  </div>
+)}
+
+
     </div>
   )
 }
