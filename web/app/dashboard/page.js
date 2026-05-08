@@ -208,6 +208,13 @@ function DashboardPage() {
   useEffect(() => { loadProfile() }, [loadProfile])
 
   useEffect(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) setGreeting('Good morning')
+  else if (hour < 17) setGreeting('Good afternoon')
+  else setGreeting('Good evening')
+}, [])
+
+  useEffect(() => {
     if (isGuest) return
     const handleFocus = () => loadProfile()
     window.addEventListener('focus', handleFocus)
@@ -267,14 +274,7 @@ function DashboardPage() {
   )
 
 const firstName = isGuest ? 'Guest' : profile?.full_name?.split(' ')[0]
-const getGreeting = () => {
-  if (typeof window === 'undefined') return 'Hello'
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
-}
-const [greeting, setGreeting] = useState(getGreeting)
+const [greeting, setGreeting] = useState('Good morning')
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
