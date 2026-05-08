@@ -266,7 +266,15 @@ function DashboardPage() {
     </div>
   )
 
-  const firstName = isGuest ? 'Guest' : profile?.full_name?.split(' ')[0]
+const firstName = isGuest ? 'Guest' : profile?.full_name?.split(' ')[0]
+const getGreeting = () => {
+  if (typeof window === 'undefined') return 'Hello'
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+const [greeting, setGreeting] = useState(getGreeting)
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif', display: 'flex' }}>
@@ -276,10 +284,10 @@ function DashboardPage() {
       <PageContent>
 
         {/* Topbar */}
-        <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', paddingLeft: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <div>
             <h1 style={{ fontSize: '17px', fontWeight: '600', color: '#111', margin: 0, letterSpacing: '-0.3px' }}>
-              Good morning, {firstName} 👋
+              {greeting}, {firstName} 👋
             </h1>
             <p style={{ color: '#6b7280', fontSize: '12px', margin: 0 }}>{profile?.branch} — {profile?.separation_type}</p>
           </div>
