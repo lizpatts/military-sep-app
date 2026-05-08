@@ -13,7 +13,12 @@ export default function PageContent({ children }) {
   }, [])
 
   return (
-    <div style={{ marginLeft: isMobile ? '0' : '220px', flex: 1, minWidth: 0 }}>
+    <div style={{
+      marginLeft: isMobile ? '0' : '220px',
+      paddingTop: isMobile ? '64px' : '0',
+      flex: 1,
+      minWidth: 0
+    }}>
       {children}
     </div>
   )
