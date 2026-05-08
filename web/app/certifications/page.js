@@ -104,7 +104,7 @@ const costFilters = ['All', 'Free', 'Reduced Cost', 'Out of Pocket']
     ...otherCerts
   ]
 
-  const costColor = (type) => {v
+  const costColor = (type) => {
     if (type === 'Free') return { bg: '#f0fdf4', border: '#86efac', text: '#15803d' }
     if (type === 'Reduced Cost') return { bg: '#fffbeb', border: '#fcd34d', text: '#92400e' }
     return { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626' }
