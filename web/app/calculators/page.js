@@ -461,6 +461,7 @@ function VADisabilityCalculator() {
   const [saveLoading, setSaveLoading] = useState(false)
   const [showScenarios, setShowScenarios] = useState(false)
   const [saveMessage, setSaveMessage] = useState(null)
+const [isPremium, setIsPremium] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -468,7 +469,12 @@ function VADisabilityCalculator() {
         const mod = await import('../../lib/supabase')
         const sb = mod.supabase || mod.default
         const { data: { session } } = await sb.auth.getSession()
-        if (session?.user) { setUser(session.user); loadScenarios(session.user.id, sb) }
+        if (session?.user) {
+          setUser(session.user)
+          loadScenarios(session.user.id, sb)
+          const { data: profile } = await sb.from('profiles').select('is_premium').eq('id', session.user.id).single()
+          setIsPremium(profile?.is_premium === true)
+        }
       } catch (e) { console.log('Auth init error:', e) }
     }
     init()
@@ -739,7 +745,24 @@ function VADisabilityCalculator() {
                 </div>
               )}
 
-              {user ? (
+              {!user && (
+                <div style={{ marginTop: '1rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: 0 }}>Sign in to save and compare scenarios</p>
+                </div>
+              )}
+              {user && !isPremium && (
+                <div style={{ marginTop: '1rem', padding: '1rem', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fcd34d', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <p style={{ color: '#92400e', fontWeight: '600', fontSize: '0.85rem', margin: '0 0 2px' }}>⭐ Premium Feature</p>
+                    <p style={{ color: '#6b7280', fontSize: '0.8rem', margin: 0 }}>Upgrade to save and compare scenarios.</p>
+                  </div>
+                  <button onClick={() => alert('Premium coming soon! Check back after launch.')}
+                    style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 18px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    Upgrade — $4/mo
+                  </button>
+                </div>
+              )}
+              {user && isPremium && (
                 <div style={{ marginTop: '1rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
                   <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>💾 Save this scenario</p>
                   {saveMessage && (
@@ -751,10 +774,6 @@ function VADisabilityCalculator() {
                       {saveLoading ? 'Saving...' : 'Save'}
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div style={{ marginTop: '1rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                  <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: 0 }}>Sign in to save and compare scenarios</p>
                 </div>
               )}
 
