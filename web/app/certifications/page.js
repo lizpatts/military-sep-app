@@ -304,9 +304,10 @@ const costFilters = ['All', 'Free', 'Veteran Program', 'Reduced Cost', 'Self Fun
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {[
           { label: 'Free', color: '#15803d', bg: '#f0fdf4', border: '#86efac', desc: 'Covered through your branch\'s COOL program or military education benefits while on active duty. Apply through your branch portal before you separate.' },
-{ label: 'Veteran Program', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff', desc: 'Free through civilian nonprofits and companies (like Fortinet, Splunk, USO) that specifically support veterans. Available before and after separation.' },
-{ label: 'Reduced Cost', color: '#92400e', bg: '#fffbeb', border: '#fcd34d', desc: 'Discounted from the standard civilian price through military partnerships, employer programs, or negotiated rates.' },
-{ label: 'Self Funded', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', desc: 'Full out-of-pocket cost. May still be worth pursuing — some of these have high civilian earning potential.' },
+          { label: 'Veteran Program', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff', desc: 'Free through civilian nonprofits and companies (like Fortinet, Splunk, USO) that specifically support veterans. Available before and after separation.' },
+          { label: 'Reduced Cost', color: '#92400e', bg: '#fffbeb', border: '#fcd34d', desc: 'Discounted from the standard civilian price through military partnerships, employer programs, or negotiated rates.' },
+          { label: 'Self Funded', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', desc: 'Full out-of-pocket cost. May still be worth pursuing — some of these have high civilian earning potential.' },
+        ].map(({ label, color, bg, border, desc }) => (
           <div key={label} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
             <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: bg, border: `1px solid ${border}`, color, fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>{label}</span>
             <p style={{ margin: 0, fontSize: '13px', color: '#6b7280', lineHeight: '1.5' }}>{desc}</p>
@@ -317,7 +318,6 @@ const costFilters = ['All', 'Free', 'Veteran Program', 'Reduced Cost', 'Self Fun
     </div>
   </div>
 )}
-
 
     </div>
   )
