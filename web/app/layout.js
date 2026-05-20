@@ -1,4 +1,3 @@
-
 export const metadata = {
   title: "MilSep — Military Separation Guide",
   description: "A free personalized transition assistant for US military members. Separation checklist, SkillBridge map, financial calculators, certifications, and document vault.",
@@ -55,6 +54,18 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
+
+        {/* Google Analytics */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-B3W2EP3YCL" />
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-B3W2EP3YCL');
+        `}} />
+
+        {/* ContentSquare / Hotjar */}
+        <script async src="https://t.contentsquare.net/uxa/a028f3f3eba7b.js" />
       </head>
       <body style={{ minHeight: '100vh', margin: 0, padding: 0 }}>{children}</body>
     </html>
